@@ -1,0 +1,26 @@
+{
+  "[solidity]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.rulers": [120]
+  },
+  "editor.formatOnPaste": true,
+  "editor.formatOnSave": true,
+  "editor.rulers": [80],
+  "files.exclude": {
+    "**/.editorconfig": true,
+    "**/.git": true,
+    "**/.pretterrc": true,
+    "**/*.lock": true,
+    "**/artifacts": true,
+    "**/cache": true,
+    "**/node_modules": true,
+    "**/typechain": true
+  },
+  "solidity.enabledAsYouTypeCompilationErrorCheck": false,
+  "solidity.formatter": "none",
+  "solidity.linter": "solhint",
+  "solidity.packageDefaultDependenciesContractsDirectory": "./contracts/",
+  "solidity.packageDefaultDependenciesDirectory": "./node_modules/",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+  "typescript.tsdk": "./node_modules/typescript/lib/"
+}

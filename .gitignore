@@ -1,9 +1,11 @@
-node_modules/
-secrets-mainnet.json
-temp/
-bin/
-flattened/
-log/
-ganache-log
-migrations/
-build/
+/node_modules/
+
+# Hardhat files
+/artifacts/
+/cache/
+
+# Typechain artifacts
+/typechain/
+
+# Config file
+.env

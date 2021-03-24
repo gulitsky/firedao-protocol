@@ -1,45 +1,32 @@
 {
-  "name": "firedao-protocol",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "build": "oz compile --evm-version istanbul",
-    "generate": "oz compile --evm-version istanbul && typechain --target 'truffle-v5' './build/**/*.json' --outDir gen/contracts",
-    "g": "yarn generate",
-    "test": "env TS_NODE_COMPILER_OPTIONS='{\"module\": \"commonjs\" }' scripts/launch.sh mocha  --exit --timeout 100000000  -r ts-node/register 'test/**/*.spec.ts'",
-    "flat": "rm flattened/* && truffle-flattener contracts/vault/fiVault.sol > flattened/fiVault && truffle-flattener contracts/controllers/Controller.sol > flattened/Controller && truffle-flattener contracts/strategies/StrategyDForceUSDC.sol > flattened/StrategyDForceUSDC && truffle-flattener contracts/strategies/StrategyDForceUSDT.sol > flattened/StrategyDForceUSDT && truffle-flattener contracts/strategies/StrategyDForceDAI.sol > flattened/StrategyDForceDAI && truffle-flattener contracts/RewardPool.sol > flattened/RewardPool  && truffle-flattener contracts/governance/Fire.sol > flattened/Fire && truffle-flattener contracts/governance/Timelock.sol > flattened/Timelock && truffle-flattener contracts/governance/Rewarder.sol > flattened/Rewarder",
-    "mainnetMigrate": "truffle migrate --skipDryRun --network mainnet"
-  },
   "author": "Park Jongseok",
-  "license": "AGPL-3.0-or-later",
   "devDependencies": {
-    "@openzeppelin/contracts": "^2.5.0",
-    "@openzeppelin/test-environment": "^0.1.4",
-    "@openzeppelin/test-helpers": "^0.5.6",
-    "@openzeppelin/truffle-upgrades": "^1.1.1",
-    "@studydefi/money-legos": "^2.3.7",
-    "@truffle/hdwallet-provider": "^1.1.0",
-    "@typechain/truffle-v5": "^2.0.2",
-    "@types/chai": "^4.2.12",
-    "@types/mocha": "^8.0.3",
-    "bignumber.js": "^9.0.1",
-    "chai": "^4.2.0",
-    "mocha": "^8.1.2",
-    "module-alias": "^2.2.2",
-    "openzeppelin-test-helpers": "^0.5.1",
-    "tiny-promisify": "^1.0.0",
-    "truffle": "^5.1.48",
-    "ts-node": "^9.0.0",
-    "typechain": "^2.0.0",
-    "typechain-target-truffle": "^1.0.2",
-    "typescript": "^4.0.2",
-    "web3": "1.2.11"
+    "@nomiclabs/hardhat-ethers": "^2.0.2",
+    "@openzeppelin/contracts": "^4.0.0",
+    "@typechain/ethers-v5": "^6.0.5",
+    "@types/node": "^14.14.35",
+    "dotenv": "^8.2.0",
+    "ethers": "^5.0.32",
+    "hardhat": "^2.1.1",
+    "hardhat-deploy": "^0.7.0-beta.50",
+    "hardhat-deploy-ethers": "^0.3.0-beta.7",
+    "hardhat-spdx-license-identifier": "^2.0.3",
+    "hardhat-typechain": "^0.3.5",
+    "prettier": "^2.2.1",
+    "prettier-plugin-solidity": "^1.0.0-beta.6",
+    "solhint": "^3.3.4",
+    "ts-node": "^9.1.1",
+    "typechain": "^4.0.3",
+    "typescript": "^4.2.3"
   },
-  "_moduleAliases": {
-    "@testUtils": "testUtils"
+  "license": "AGPL-3.0-or-later",
+  "name": "firedao-protocol",
+  "scripts": {
+    "build": "npm run clean && npm run lint && npm run compile",
+    "clean": "hardhat clean",
+    "compile": "hardhat compile",
+    "lint": "solhint ./contracts/**/*.sol",
+    "test": "hardhat test:jest"
   },
-  "dependencies": {
-    "truffle-flattener": "^1.5.0"
-  }
+  "version": "1.0.0"
 }
