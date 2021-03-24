@@ -20,6 +20,8 @@ contract ERC20FundsDistributionToken is ERC20, IFundsDistributionToken {
 
     function withdrawFunds() external override {}
 
+    function withdrawableFundsOf(address owner) external view override returns (uint256) {}
+
     function _transfer(
         address sender,
         address recipient,

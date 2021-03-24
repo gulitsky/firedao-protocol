@@ -8,8 +8,8 @@
   "editor.rulers": [80],
   "files.exclude": {
     "**/.editorconfig": true,
-    "**/.git": true,
-    "**/.pretterrc": true,
+    "**/.git*": true,
+    "**/.*rc": true,
     "**/*.lock": true,
     "**/artifacts": true,
     "**/cache": true,
