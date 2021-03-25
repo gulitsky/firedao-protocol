@@ -2,4 +2,8 @@
 
 pragma solidity 0.8.3;
 
-interface IStrategy {}
+interface IStrategy {
+    function invest() external;
+
+    function divest() external;
+}

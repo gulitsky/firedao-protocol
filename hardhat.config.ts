@@ -4,6 +4,7 @@ import { HardhatUserConfig } from "hardhat/config";
 import "hardhat-spdx-license-identifier";
 import "@nomiclabs/hardhat-ethers";
 import "hardhat-typechain";
+import "@nomiclabs/hardhat-waffle";
 
 dotenv.config();
 const {
