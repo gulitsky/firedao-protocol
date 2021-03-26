@@ -61,6 +61,19 @@ contract VenusStrategy is Ownable, IStrategy {
         if (balance < amount) {}
     }
 
+    function rescue(
+        IERC20Metadata token,
+        address to,
+        uint256 amount
+    ) external onlyOwner {
+        token.safeTransfer(to, amount);
+    }
+
+    function setStrategist(address _strategist) external onlyOwner {
+        require(_strategist != address(0), "Strategy: strategist can't be zero address");
+        strategist = _strategist;
+    }
+
     function totalVenusDeposits() public view returns (uint256) {
         return vToken.balanceOf(address(this));
     }
