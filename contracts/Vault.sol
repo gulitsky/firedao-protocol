@@ -19,6 +19,12 @@ interface IVault {
     function withdraw(uint256 amount) external;
 
     function harvest(uint256 amount) external returns (uint256);
+
+    // function underlying() external view returns (address);
+
+    // function target() external view returns (address);
+
+    function lastDistributionAt() external view returns (uint256);
 }
 
 contract Vault is Ownable, IVault, DividendToken {
@@ -31,7 +37,7 @@ contract Vault is Ownable, IVault, DividendToken {
 
     uint256 public depositLimit;
     uint256 public performanceFee;
-    uint256 public lastDistributionAt;
+    uint256 public override lastDistributionAt;
 
     uint8 internal immutable underlyingDecimals;
 
@@ -72,13 +78,13 @@ contract Vault is Ownable, IVault, DividendToken {
     function withdraw(uint256 amount) public override {
         _burn(_msgSender(), amount);
         // TODO: Not divest when underlying balance is sufficent to cover withdraw amount
-        strategy.divest();
+        strategy.divest(amount);
         underlying.safeTransfer(_msgSender(), amount);
     }
 
     function harvest(uint256 amount) public override onlyHarvester returns (uint256) {
+        strategy.divest(amount);
         /*
-        strategy.divest();
         if (performanceFee >0) {
 
         } else {

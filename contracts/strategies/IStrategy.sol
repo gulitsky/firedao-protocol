@@ -5,5 +5,7 @@ pragma solidity 0.8.3;
 interface IStrategy {
     function invest() external;
 
-    function divest() external;
+    function divest(uint256 amount) external;
+
+    function calcTotalValue() external view returns (uint256);
 }
