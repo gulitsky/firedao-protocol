@@ -6,7 +6,7 @@
         "isDefault": true,
         "kind": "build"
       },
-      "label": "Compile",
+      "label": "Build",
       "problemMatcher": [
         {
           "fileLocation": ["relative", "${workspaceFolder}"],
@@ -46,11 +46,22 @@
       "type": "npm"
     },
     {
-      "type": "npm",
-      "script": "clean",
+      "detail": "Test the smart contracts with Jest",
+      "group": {
+        "isDefault": true,
+        "kind": "test"
+      },
+      "label": "Test",
       "problemMatcher": [],
+      "script": "test",
+      "type": "npm"
+    },
+    {
+      "detail": "Delete the smart contract artifacts and cache",
       "label": "Clean",
-      "detail": "Delete the smart contract artifacts and cache"
+      "problemMatcher": [],
+      "script": "clean",
+      "type": "npm"
     }
   ],
   "version": "2.0.0"

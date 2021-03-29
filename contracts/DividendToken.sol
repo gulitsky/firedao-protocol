@@ -3,17 +3,22 @@
 pragma solidity 0.8.3;
 
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-contract DividendToken is ERC20 {
+import "./interfaces/IERC20Metadata.sol";
+
+interface IDividendToken is IERC20 {}
+
+abstract contract DividendToken is IDividendToken, ERC20 {
     using SafeCast for int256;
     using SafeCast for uint256;
-    using SafeERC20 for IERC20;
+    using SafeERC20 for IERC20Metadata;
 
     uint256 internal constant MAGNITUDE = 2**128;
 
-    IERC20 public target;
+    IERC20Metadata public immutable targetToken;
 
     uint256 internal magnifiedDividendPerShare;
     mapping(address => int256) internal magnifiedDividendCorrections;
@@ -26,9 +31,9 @@ contract DividendToken is ERC20 {
     constructor(
         string memory name,
         string memory symbol,
-        IERC20 _target
+        IERC20Metadata _targetToken
     ) ERC20(name, symbol) {
-        target = _target;
+        targetToken = _targetToken;
     }
 
     function withdrawableDividendOf(address account) public view returns (uint256) {
@@ -50,7 +55,7 @@ contract DividendToken is ERC20 {
         require(withdrawableDividend > 0, "DividendToken: nothing to withdraw");
 
         withdrawnDividends[account] = withdrawnDividends[account] + withdrawableDividend;
-        target.safeTransferFrom(_msgSender(), address(this), withdrawableDividend);
+        targetToken.safeTransferFrom(_msgSender(), address(this), withdrawableDividend);
 
         emit DividendWithdrawn(account, withdrawableDividend);
     }
@@ -60,7 +65,7 @@ contract DividendToken is ERC20 {
         require(amount > 0, "DividendToken: nothing to distribute");
 
         magnifiedDividendPerShare = magnifiedDividendPerShare + ((amount * MAGNITUDE) / totalSupply());
-        target.safeTransferFrom(_msgSender(), address(this), amount);
+        targetToken.safeTransferFrom(_msgSender(), address(this), amount);
 
         emit DividendsDistributed(_msgSender(), amount);
     }
