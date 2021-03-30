@@ -9,6 +9,12 @@ import "./../interfaces/IERC20Metadata.sol";
 import {IVault} from "./../Vault.sol";
 import "./IStrategy.sol";
 
+interface IUnitroller {
+    function enterMarkets(address[] calldata vTokens) external returns (uint256[] memory);
+
+    function claimVenus(address account) external;
+}
+
 interface IVToken is IERC20Metadata {
     function mint(uint256 amount) external returns (uint256);
 
@@ -25,9 +31,11 @@ contract VenusStrategy is Ownable, IStrategy {
     IERC20Metadata public underlying;
     address public strategist;
     uint256 public buffer;
+    uint256 public immutable minWithdrawalCap;
+    uint256 public withdrawalCap = MAX_UINT256;
 
     modifier onlyStrategist {
-        require(_msgSender() == strategist, "Strategy: only strategist allowed");
+        require(_msgSender() == strategist || _msgSender() == owner(), "Strategy: only strategist or timelock allowed");
         _;
     }
 
@@ -45,6 +53,7 @@ contract VenusStrategy is Ownable, IStrategy {
         vault = _vault;
         vToken = _vToken;
         underlying = IERC20Metadata(_vToken.underlying());
+        minWithdrawalCap = 1000 * (10**underlying.decimals());
         underlying.safeIncreaseAllowance(address(_vToken), MAX_UINT256);
         transferOwnership(_timelock);
     }
@@ -58,7 +67,11 @@ contract VenusStrategy is Ownable, IStrategy {
 
     function divest(uint256 amount) external override onlyVault {
         uint256 balance = underlying.balanceOf(address(this));
-        if (balance < amount) {}
+        if (balance < amount) {
+            uint256 missingAmount = amount - balance;
+            require(missingAmount <= withdrawalCap, "VenusStrategy: reached withdrawal cap");
+        }
+        underlying.safeTransfer(address(vault), amount);
     }
 
     function rescue(

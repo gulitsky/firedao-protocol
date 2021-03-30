@@ -115,7 +115,7 @@ contract Vault is Ownable, Pausable, IVault, DividendToken {
     }
 
     function claimOnBehalf(address account) external {
-        require(_msgSender() == harvester || _msgSender() == owner(), "Vault: only harvester or gov allowed");
+        require(_msgSender() == address(harvester) || _msgSender() == owner(), "Vault: only harvester or gov allowed");
         withdrawDividend(account);
     }
 
