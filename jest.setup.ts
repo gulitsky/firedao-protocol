@@ -1,4 +1,4 @@
 import { waffleJest } from "@ethereum-waffle/jest";
 
 expect.extend(waffleJest);
-jest.setTimeout(10000);
+jest.setTimeout(20000);

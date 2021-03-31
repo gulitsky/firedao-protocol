@@ -28,6 +28,7 @@ contract VenusStrategy is Ownable, IStrategy {
 
     IVault public vault;
     IVToken public vToken;
+    IUnitroller public unitroller;
     IERC20Metadata public underlying;
     address public strategist;
     uint256 public buffer;
@@ -47,6 +48,7 @@ contract VenusStrategy is Ownable, IStrategy {
     constructor(
         IVault _vault,
         IVToken _vToken,
+        IUnitroller _unitroller,
         address _timelock
     ) {
         strategist = _msgSender();
@@ -55,6 +57,12 @@ contract VenusStrategy is Ownable, IStrategy {
         underlying = IERC20Metadata(_vToken.underlying());
         minWithdrawalCap = 1000 * (10**underlying.decimals());
         underlying.safeIncreaseAllowance(address(_vToken), MAX_UINT256);
+
+        unitroller = _unitroller;
+        address[] memory vTokens = new address[](1);
+        vTokens[0] = address(_vToken);
+        unitroller.enterMarkets(vTokens);
+
         transferOwnership(_timelock);
     }
 
@@ -66,6 +74,7 @@ contract VenusStrategy is Ownable, IStrategy {
     }
 
     function divest(uint256 amount) external override onlyVault {
+        unitroller.claimVenus(address(this));
         uint256 balance = underlying.balanceOf(address(this));
         if (balance < amount) {
             uint256 missingAmount = amount - balance;

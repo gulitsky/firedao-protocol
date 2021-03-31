@@ -80,12 +80,12 @@ contract Vault is Ownable, Pausable, IVault, DividendToken {
             _strategy.invest();
             if (!force) {
                 require(_strategy.calcTotalValue() >= prevTotalValue && strategy.calcTotalValue() == 0);
-            } else {
-                require(_msgSender() == owner(), "Vault: only gov allowed");
-                _unpause();
             }
-            strategy = _strategy;
+        } else {
+            require(_msgSender() == owner(), "Vault: only gov allowed");
+            _unpause();
         }
+        strategy = _strategy;
     }
 
     function setHarvester(IHarvester _harvester) external onlyOwner {
@@ -127,7 +127,7 @@ contract Vault is Ownable, Pausable, IVault, DividendToken {
     }
 
     function harvest(uint256 amount) external override onlyHarvester returns (uint256 afterFee) {
-        // require(amount <= underlyingYield(), "Vault: amount larger than generated yield");
+        require(amount <= underlyingYield(), "Vault: amount larger than generated yield");
         strategy.divest(amount);
         if (performanceFee > 0) {
             uint256 fee = (amount * performanceFee) / MAX_FEE;
