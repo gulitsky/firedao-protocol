@@ -7,5 +7,5 @@ interface IStrategy {
 
     function divest(uint256 amount) external;
 
-    function calcTotalValue() external view returns (uint256);
+    function calcTotalValue() external returns (uint256);
 }

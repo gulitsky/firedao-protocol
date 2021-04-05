@@ -157,11 +157,11 @@ contract Vault is Ownable, Pausable, IVault, DividendToken {
         token.safeTransfer(owner(), token.balanceOf(address(this)));
     }
 
-    function calcTotalValue() public view returns (uint256) {
+    function calcTotalValue() public returns (uint256) {
         return strategy.calcTotalValue();
     }
 
-    function underlyingYield() public view returns (uint256) {
+    function underlyingYield() public returns (uint256) {
         return calcTotalValue() - totalSupply();
     }
 

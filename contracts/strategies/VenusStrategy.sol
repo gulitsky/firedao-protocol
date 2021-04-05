@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "./../interfaces/IERC20Metadata.sol";
+import "./../interfaces/IPancakeRouter.sol";
 import {IVault} from "./../Vault.sol";
 import "./IStrategy.sol";
 
@@ -24,7 +25,7 @@ interface IVToken is IERC20Metadata {
 
     function underlying() external view returns (address);
 
-    function balanceOfUnderlying(address account) external view returns (uint256);
+    function balanceOfUnderlying(address account) external returns (uint256);
 }
 
 contract VenusStrategy is Ownable, IStrategy {
@@ -32,22 +33,28 @@ contract VenusStrategy is Ownable, IStrategy {
 
     uint256 internal constant MAX_UINT256 = 2**256 - 1;
 
+    IPancakeRouter public pancakeRouter;
     IVault public vault;
     IVToken public vToken;
     IUnitroller public unitroller;
     IERC20Metadata public underlying;
+    IERC20Metadata public xvs;
     address public strategist;
     uint256 public buffer;
     uint256 public immutable minWithdrawalCap;
     uint256 public withdrawalCap = MAX_UINT256;
+    address[] public xvsToUnderlyingPath;
 
     modifier onlyStrategist {
-        require(_msgSender() == strategist || _msgSender() == owner(), "Strategy: only strategist or timelock allowed");
+        require(
+            _msgSender() == strategist || _msgSender() == owner(),
+            "VenusStrategy: only strategist or timelock allowed"
+        );
         _;
     }
 
     modifier onlyVault {
-        require(_msgSender() == address(vault), "Strategy: only vault allowed");
+        require(_msgSender() == address(vault), "VenusStrategy: only vault allowed");
         _;
     }
 
@@ -55,11 +62,18 @@ contract VenusStrategy is Ownable, IStrategy {
         IVault _vault,
         IVToken _vToken,
         IUnitroller _unitroller,
-        address _timelock
+        IERC20Metadata _xvs,
+        address _timelock,
+        IPancakeRouter _pancakeRouter,
+        address[] memory _xvsToUnderlyingPath
     ) {
+        require(_xvsToUnderlyingPath.length >= 2, "VenusStrategy: path length must be >= 2");
+        xvsToUnderlyingPath = _xvsToUnderlyingPath;
         strategist = _msgSender();
         vault = _vault;
         vToken = _vToken;
+        xvs = _xvs;
+        pancakeRouter = _pancakeRouter;
         underlying = IERC20Metadata(_vToken.underlying());
         minWithdrawalCap = 1000 * (10**underlying.decimals());
         underlying.safeIncreaseAllowance(address(_vToken), MAX_UINT256);
@@ -76,7 +90,7 @@ contract VenusStrategy is Ownable, IStrategy {
         uint256 balance = underlying.balanceOf(address(this));
         // TODO: Move buffer to Vault
         if (balance > buffer) {
-            vToken.mint(balance - buffer);
+            require(vToken.mint(balance - buffer) == 0);
         }
     }
 
@@ -84,8 +98,19 @@ contract VenusStrategy is Ownable, IStrategy {
         address[] memory vTokens = new address[](1);
         vTokens[0] = address(vToken);
         unitroller.claimVenus(address(this), vTokens);
+        uint256 balance = xvs.balanceOf(address(this));
+        if (balance > 0) {
+            xvs.approve(address(pancakeRouter), balance);
+            pancakeRouter.swapExactTokensForTokens(
+                balance,
+                0,
+                xvsToUnderlyingPath,
+                address(this),
+                block.timestamp + 1800
+            );
+        }
 
-        uint256 balance = underlying.balanceOf(address(this));
+        balance = underlying.balanceOf(address(this));
         if (balance < amount) {
             uint256 missingAmount = amount - balance;
             require(missingAmount <= withdrawalCap, "VenusStrategy: reached withdrawal cap");
@@ -136,11 +161,13 @@ contract VenusStrategy is Ownable, IStrategy {
         strategist = _strategist;
     }
 
-    function calcTotalValue() external view override returns (uint256) {}
-
-    function totalVenusDeposits() public view returns (uint256) {
-        return vToken.balanceOf(address(this));
+    function calcTotalValue() external override returns (uint256) {
+        return totalVenusDeposits() + underlying.balanceOf(address(this));
     }
 
-    function sharesForAmount(uint256 amount) internal view returns (uint256) {}
+    function totalVenusDeposits() public returns (uint256) {
+        return vToken.balanceOfUnderlying(address(this));
+    }
+
+    // function sharesForAmount(uint256 amount) internal view returns (uint256) {}
 }

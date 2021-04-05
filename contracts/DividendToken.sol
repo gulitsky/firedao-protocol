@@ -55,7 +55,7 @@ abstract contract DividendToken is IDividendToken, ERC20 {
         require(withdrawableDividend > 0, "DividendToken: nothing to withdraw");
 
         withdrawnDividends[account] = withdrawnDividends[account] + withdrawableDividend;
-        targetToken.safeTransferFrom(_msgSender(), address(this), withdrawableDividend);
+        targetToken.safeTransfer(account, withdrawableDividend);
 
         emit DividendWithdrawn(account, withdrawableDividend);
     }
