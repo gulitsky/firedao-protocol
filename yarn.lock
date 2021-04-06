@@ -4234,7 +4234,7 @@ ethereumjs-wallet@0.6.5:
     utf8 "^3.0.0"
     uuid "^3.3.2"
 
-ethers@^5.0.0, ethers@^5.0.1, ethers@^5.0.2, ethers@^5.0.32, ethers@^5.1.0:
+ethers@^5.0.0, ethers@^5.0.1, ethers@^5.0.2, ethers@^5.1.0:
   version "5.1.0"
   resolved "https://registry.yarnpkg.com/ethers/-/ethers-5.1.0.tgz#8a8758e0b6cbbc19fd4b87f4d551170fa6f1a995"
   integrity sha512-2L6Ge6wMBw02FlRoCLg4E0Elt3khMNlW6ULawa10mMeeZToYJ5+uCfiuTuB+XZ6om1Y7wuO9ZzezP8FsU2M/+g==
@@ -5027,10 +5027,10 @@ hardhat-deploy-ethers@^0.3.0-beta.7:
   resolved "https://registry.yarnpkg.com/hardhat-deploy-ethers/-/hardhat-deploy-ethers-0.3.0-beta.7.tgz#860d86b84ed3c4fdef64283ccf1e8d5623454d02"
   integrity sha512-JKMNte6vudu9LSNqgmBtNxc1gfxp3NUcPKVAf/FANHfl9pa/mBGg6hpQO7tD8CLkAbe6f4K5BjyYIPWX3p7MKw==
 
-hardhat-deploy@^0.7.1:
-  version "0.7.1"
-  resolved "https://registry.yarnpkg.com/hardhat-deploy/-/hardhat-deploy-0.7.1.tgz#df39f81e6c97132081a27e171f63e93e25f92520"
-  integrity sha512-fRX4prBdxMxV1vYxKunuf785nd4tChP67DHLkFyue7CqctXGvhYMaEmGqFdzEwJn8rH9w+J/JKyR3vc1cZAdHw==
+hardhat-deploy@^0.7.2:
+  version "0.7.2"
+  resolved "https://registry.yarnpkg.com/hardhat-deploy/-/hardhat-deploy-0.7.2.tgz#9229312bb03a152c373b1fb921df9aac9911070e"
+  integrity sha512-o5F/B2NkSu0cjkPjblu7sIwYzrFG/sEnA58dzJ9d/0RUaHZ9gezaL1X9Q85Nbo4wRXn+8ElM0RptKAOtQc6ITA==
   dependencies:
     "@ethersproject/abi" "^5.0.2"
     "@ethersproject/abstract-signer" "^5.0.2"
