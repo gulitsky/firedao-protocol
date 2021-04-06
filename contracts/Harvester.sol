@@ -36,21 +36,19 @@ contract Harvester is Ownable, IHarvester {
         address[] calldata path,
         uint256 deadline
     ) external override onlyOwner {
-        uint256 afterFee = vault.harvest(amountIn);
+        uint256 amount = vault.harvest(amountIn);
         uint256 durationSinceLastHarvest = block.timestamp - vault.lastDistributionAt();
         IERC20Metadata from = vault.underlying();
-        ratePerToken[vault] =
-            (afterFee * (10**(36 - from.decimals()))) /
-            vault.totalSupply() /
-            durationSinceLastHarvest;
+        ratePerToken[vault] = (amount * (10**(36 - from.decimals()))) / vault.totalSupply() / durationSinceLastHarvest;
 
-        from.approve(address(pancakeRouter), afterFee);
-        uint256 amount =
-            pancakeRouter.swapExactTokensForTokens(afterFee, amountOutMin, path, address(this), deadline)[
+        // TODO: 10 % to FIRE buyback and burn
+        IERC20Metadata to = vault.target();
+        if (address(from) != address(to)) {
+            from.approve(address(pancakeRouter), amount);
+            amount = pancakeRouter.swapExactTokensForTokens(amount, amountOutMin, path, address(this), deadline)[
                 path.length - 1
             ];
-
-        IERC20Metadata to = vault.target();
+        }
         to.approve(address(vault), amount);
         vault.distributeDividends(amount);
     }

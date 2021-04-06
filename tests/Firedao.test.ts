@@ -24,10 +24,10 @@ import {
   UNITROLLER_ADDRESS,
   impersonate,
 } from "./helpers";
-import { BigNumberish } from "@ethersproject/bignumber";
+import { BigNumber } from "@ethersproject/bignumber";
 
 describe("FIREDAO", () => {
-  let amount: BigNumberish;
+  let amount: BigNumber;
   let governance: SignerWithAddress,
     timelock: SignerWithAddress,
     whale: SignerWithAddress;
@@ -52,7 +52,7 @@ describe("FIREDAO", () => {
       governance,
     );
 
-    amount = ethers.utils.parseUnits("100", await cake.decimals());
+    amount = ethers.utils.parseUnits("100", await dai.decimals());
   });
 
   test("should deploy Harvester", async () => {
@@ -101,6 +101,7 @@ describe("FIREDAO", () => {
     expect(await strategy.unitroller()).toBe(UNITROLLER_ADDRESS);
     expect(await strategy.xvs()).toBe(xvs.address);
     expect(await strategy.pancakeRouter()).toBe(pancakeRouter.address);
+    expect(await strategy.owner()).toBe(timelock.address);
   });
 
   test("should connect Venus Strategy to Vault", async () => {
@@ -112,7 +113,14 @@ describe("FIREDAO", () => {
   test("should deposit", async () => {
     await dai.approve(vault.address, amount);
     await vault.connect(whale).deposit(amount);
+    expect(await dai.balanceOf(vault.address)).toStrictEqual(amount);
     expect(await vault.balanceOf(whale.address)).toStrictEqual(amount);
+  });
+
+  test("should earn", async () => {
+    await vault.earn();
+    const balance = await dai.balanceOf(vault.address);
+    expect(balance).toStrictEqual(amount.mul(1000).div(10000));
   });
 
   test("should harvest", async () => {

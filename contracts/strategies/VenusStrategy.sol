@@ -31,8 +31,6 @@ interface IVToken is IERC20Metadata {
 contract VenusStrategy is Ownable, IStrategy {
     using SafeERC20 for IERC20Metadata;
 
-    uint256 internal constant MAX_UINT256 = 2**256 - 1;
-
     IPancakeRouter public pancakeRouter;
     IVault public vault;
     IVToken public vToken;
@@ -40,9 +38,8 @@ contract VenusStrategy is Ownable, IStrategy {
     IERC20Metadata public underlying;
     IERC20Metadata public xvs;
     address public strategist;
-    uint256 public buffer;
     uint256 public immutable minWithdrawalCap;
-    uint256 public withdrawalCap = MAX_UINT256;
+    uint256 public withdrawalCap = type(uint256).max;
     address[] public xvsToUnderlyingPath;
 
     modifier onlyStrategist {
@@ -76,7 +73,7 @@ contract VenusStrategy is Ownable, IStrategy {
         pancakeRouter = _pancakeRouter;
         underlying = IERC20Metadata(_vToken.underlying());
         minWithdrawalCap = 1000 * (10**underlying.decimals());
-        underlying.safeIncreaseAllowance(address(_vToken), MAX_UINT256);
+        underlying.safeIncreaseAllowance(address(_vToken), type(uint256).max);
 
         unitroller = _unitroller;
         address[] memory vTokens = new address[](1);
@@ -88,10 +85,7 @@ contract VenusStrategy is Ownable, IStrategy {
 
     function invest() external override onlyVault {
         uint256 balance = underlying.balanceOf(address(this));
-        // TODO: Move buffer to Vault
-        if (balance > buffer) {
-            require(vToken.mint(balance - buffer) == 0);
-        }
+        require(vToken.mint(balance) == 0);
     }
 
     function divest(uint256 amount) external override onlyVault {
@@ -147,10 +141,6 @@ contract VenusStrategy is Ownable, IStrategy {
         vToken.redeem(vToken.balanceOf(address(this)));
     }
 
-    function setBuffer(uint256 _buffer) external onlyOwner {
-        buffer = _buffer;
-    }
-
     function setWithdrawalCap(uint256 underlyingCap) external onlyOwner {
         require(underlyingCap >= minWithdrawalCap, "VenusStrategy: withdrawal cap too low");
         withdrawalCap = underlyingCap;
@@ -162,12 +152,10 @@ contract VenusStrategy is Ownable, IStrategy {
     }
 
     function calcTotalValue() external override returns (uint256) {
-        return totalVenusDeposits() + underlying.balanceOf(address(this));
+        return totalVenusDeposits();
     }
 
     function totalVenusDeposits() public returns (uint256) {
         return vToken.balanceOfUnderlying(address(this));
     }
-
-    // function sharesForAmount(uint256 amount) internal view returns (uint256) {}
 }

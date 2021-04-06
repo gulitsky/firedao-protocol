@@ -14,6 +14,8 @@ import "./strategies/IStrategy.sol";
 interface IVault is IDividendToken {
     function deposit(uint256) external;
 
+    function earn() external;
+
     function claim() external;
 
     function withdraw(uint256 amount) external;
@@ -32,7 +34,7 @@ interface IVault is IDividendToken {
 contract Vault is Ownable, Pausable, IVault, DividendToken {
     using SafeERC20 for IERC20Metadata;
 
-    uint256 internal constant MAX_FEE = 10000;
+    uint256 internal constant BP = 10000; // 100 %
 
     IHarvester public harvester;
     address public timelock;
@@ -40,8 +42,9 @@ contract Vault is Ownable, Pausable, IVault, DividendToken {
 
     IERC20Metadata public immutable override underlying;
 
+    uint256 public barrier = 1000; // 10 %
     uint256 public depositLimit;
-    uint256 public performanceFee;
+    uint256 public performanceFee = 1000; // 10 %
     uint256 public override lastDistributionAt;
 
     uint8 internal immutable underlyingDecimals;
@@ -97,17 +100,28 @@ contract Vault is Ownable, Pausable, IVault, DividendToken {
     }
 
     function setPerformanceFee(uint256 _performanceFee) external onlyOwner {
-        require(_performanceFee <= MAX_FEE, "Vault: performance fee too high");
+        require(_performanceFee < BP, "Vault: performance fee too high");
         performanceFee = _performanceFee;
+    }
+
+    function setBarrier(uint256 _barrier) external onlyOwner {
+        require(_barrier < BP, "Vault: barrier too high");
+        barrier = _barrier;
     }
 
     function deposit(uint256 amount) external override {
         if (depositLimit > 0) {
             require(totalSupply() + amount <= depositLimit, "Vault: total supply will exceed deposit limit");
         }
-        underlying.safeTransferFrom(_msgSender(), address(strategy), amount);
-        strategy.invest();
+        underlying.safeTransferFrom(_msgSender(), address(this), amount);
         _mint(_msgSender(), amount);
+    }
+
+    function earn() external override onlyOwner {
+        uint256 balance = underlying.balanceOf(address(this));
+        uint256 amount = balance - ((balance * barrier) / BP);
+        underlying.safeTransfer(address(strategy), amount);
+        strategy.invest();
     }
 
     function claim() external override {
@@ -121,8 +135,10 @@ contract Vault is Ownable, Pausable, IVault, DividendToken {
 
     function withdraw(uint256 amount) external override {
         _burn(_msgSender(), amount);
-        // TODO: Not divest when underlying balance is sufficent to cover withdraw amount
-        strategy.divest(amount);
+        uint256 balance = underlying.balanceOf(address(this));
+        if (amount > balance) {
+            strategy.divest(amount - balance);
+        }
         underlying.safeTransfer(_msgSender(), amount);
     }
 
@@ -130,7 +146,7 @@ contract Vault is Ownable, Pausable, IVault, DividendToken {
         require(amount <= underlyingYield(), "Vault: amount larger than generated yield");
         strategy.divest(amount);
         if (performanceFee > 0) {
-            uint256 fee = (amount * performanceFee) / MAX_FEE;
+            uint256 fee = (amount * performanceFee) / BP;
             afterFee = amount - fee;
             underlying.safeTransfer(owner(), fee);
         } else {
@@ -158,7 +174,7 @@ contract Vault is Ownable, Pausable, IVault, DividendToken {
     }
 
     function calcTotalValue() public returns (uint256) {
-        return strategy.calcTotalValue();
+        return strategy.calcTotalValue() + underlying.balanceOf(address(this));
     }
 
     function underlyingYield() public returns (uint256) {
