@@ -15,6 +15,7 @@ interface IHarvester {
         uint256 amountIn,
         uint256 amountOutMin,
         address[] calldata path,
+        address[] calldata targetToFirePath,
         uint256 deadline
     ) external;
 }
@@ -22,11 +23,17 @@ interface IHarvester {
 contract Harvester is Ownable, IHarvester {
     using SafeERC20 for IERC20Metadata;
 
+    uint256 internal constant BP = 10000; // 100 %
+
     IPancakeRouter public pancakeRouter;
+    address public treasury;
+    uint256 public performanceFee = 1000; // 10 %
+    uint256 public fireBuyBack = 1000; // 10 %
     mapping(IVault => uint256) public ratePerToken;
 
-    constructor(IPancakeRouter _pancakeRouter) {
+    constructor(IPancakeRouter _pancakeRouter, address _treasury) {
         pancakeRouter = _pancakeRouter;
+        treasury = _treasury;
     }
 
     function harvestVault(
@@ -34,14 +41,20 @@ contract Harvester is Ownable, IHarvester {
         uint256 amountIn,
         uint256 amountOutMin,
         address[] calldata path,
+        address[] calldata targetToFirePath,
         uint256 deadline
     ) external override onlyOwner {
-        uint256 amount = vault.harvest(amountIn);
-        uint256 durationSinceLastHarvest = block.timestamp - vault.lastDistributionAt();
+        uint256 amount = amountIn;
         IERC20Metadata from = vault.underlying();
-        ratePerToken[vault] = (amount * (10**(36 - from.decimals()))) / vault.totalSupply() / durationSinceLastHarvest;
+        uint256 afterFee = (amount * (performanceFee + fireBuyBack)) / BP;
+        uint256 durationSinceLastHarvest = block.timestamp - vault.lastDistributionAt();
+        ratePerToken[vault] =
+            (afterFee * (10**(36 - from.decimals()))) /
+            vault.totalSupply() /
+            durationSinceLastHarvest;
 
-        // TODO: 10 % to FIRE buyback and burn
+        vault.harvest(amount);
+
         IERC20Metadata to = vault.target();
         if (address(from) != address(to)) {
             from.approve(address(pancakeRouter), amount);
@@ -49,8 +62,42 @@ contract Harvester is Ownable, IHarvester {
                 path.length - 1
             ];
         }
-        to.approve(address(vault), amount);
-        vault.distributeDividends(amount);
+
+        afterFee = amount;
+        if (performanceFee > 0) {
+            uint256 fee = (amount * performanceFee) / BP;
+            afterFee = afterFee - fee;
+            to.safeTransfer(treasury, fee);
+        }
+        if (fireBuyBack > 0) {
+            uint256 fireAmount = (amount * fireBuyBack) / BP;
+            to.approve(address(pancakeRouter), fireAmount);
+            fireAmount = pancakeRouter.swapExactTokensForTokens(
+                fireAmount,
+                0,
+                targetToFirePath,
+                address(0),
+                block.timestamp + 1800
+            )[path.length - 1];
+            afterFee = afterFee - fireAmount;
+        }
+
+        to.approve(address(vault), afterFee);
+        vault.distributeDividends(afterFee);
+    }
+
+    function setTreasury(address _treasury) external onlyOwner {
+        treasury = _treasury;
+    }
+
+    function setPerformanceFee(uint256 _performanceFee) external onlyOwner {
+        require(_performanceFee < BP, "Harvester: performance fee too high");
+        performanceFee = _performanceFee;
+    }
+
+    function setFireBuyBack(uint256 _fireBuyBack) external onlyOwner {
+        require(_fireBuyBack < BP, "Harvester: fire buy back percent too high");
+        fireBuyBack = _fireBuyBack;
     }
 
     function sweep(IERC20Metadata token) external onlyOwner {

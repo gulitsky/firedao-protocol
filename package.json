@@ -37,6 +37,7 @@
     "build": "yarn clean && yarn compile",
     "clean": "hardhat clean",
     "compile": "yarn lint && hardhat compile",
+    "deploy": "hardhat deploy",
     "lint": "solhint ./contracts/**/*.sol",
     "test": "jest --runInBand"
   },

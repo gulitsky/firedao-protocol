@@ -7,6 +7,8 @@ import {
   IPancakeRouter as PancakeRouter,
   IVToken__factory as VTokenFactory,
   IVToken as VToken,
+  FIRE__factory as FireFactory,
+  FIRE as Fire,
   Harvester,
   Harvester__factory as HarversterFactory,
   Vault__factory as VaultFactory,
@@ -22,6 +24,7 @@ import {
   XVS_ADDRESS,
   V_DAI_ADDRESS,
   UNITROLLER_ADDRESS,
+  WBNB_ADDRESS,
   impersonate,
 } from "./helpers";
 import { BigNumber } from "@ethersproject/bignumber";
@@ -30,15 +33,17 @@ describe("FIREDAO", () => {
   let amount: BigNumber;
   let governance: SignerWithAddress,
     timelock: SignerWithAddress,
+    treasury: SignerWithAddress,
     whale: SignerWithAddress;
   let dai: ERC20, cake: ERC20, xvs: ERC20, vDai: VToken;
+  let fire: Fire;
   let pancakeRouter: PancakeRouter;
   let harvester: Harvester;
   let vault: Vault;
   let strategy: VenusStrategy;
 
   beforeAll(async () => {
-    [governance, timelock] = await ethers.getSigners();
+    [governance, timelock, treasury] = await ethers.getSigners();
 
     whale = await impersonate(WHALE_ADDRESS);
 
@@ -55,9 +60,32 @@ describe("FIREDAO", () => {
     amount = ethers.utils.parseUnits("100", await dai.decimals());
   });
 
+  test("deploy FIRE and create pool", async () => {
+    fire = await new FireFactory(whale).deploy(whale.address);
+    await fire.approve(pancakeRouter.address, amount);
+    await cake.approve(pancakeRouter.address, amount);
+
+    const currentBlock = await ethers.provider.getBlockNumber();
+    const block = await ethers.provider.getBlock(currentBlock);
+    const future = block.timestamp + 178800;
+    await pancakeRouter
+      .connect(whale)
+      .addLiquidity(
+        fire.address,
+        cake.address,
+        amount,
+        amount,
+        0,
+        0,
+        whale.address,
+        future,
+      );
+  });
+
   test("should deploy Harvester", async () => {
     harvester = await new HarversterFactory(governance).deploy(
       pancakeRouter.address,
+      treasury.address,
     );
     expect(await harvester.pancakeRouter()).toBe(pancakeRouter.address);
   });
@@ -92,7 +120,7 @@ describe("FIREDAO", () => {
       xvs.address,
       timelock.address,
       pancakeRouter.address,
-      [xvs.address, "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c", dai.address],
+      [xvs.address, WBNB_ADDRESS, dai.address],
     );
     expect(await strategy.strategist()).toBe(governance.address);
     expect(await strategy.vault()).toBe(vault.address);
@@ -141,6 +169,7 @@ describe("FIREDAO", () => {
       y,
       0,
       [dai.address, cake.address],
+      [cake.address, fire.address],
       future + 10,
     );
     const balance = await cake.balanceOf(vault.address);

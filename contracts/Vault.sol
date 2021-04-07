@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "./interfaces/IERC20Metadata.sol";
+import "./interfaces/IPancakeRouter.sol";
 import {IHarvester} from "./Harvester.sol";
 import "./DividendToken.sol";
 import "./strategies/IStrategy.sol";
@@ -20,7 +21,7 @@ interface IVault is IDividendToken {
 
     function withdraw(uint256 amount) external;
 
-    function harvest(uint256 amount) external returns (uint256 afterFee);
+    function harvest(uint256 amount) external;
 
     function distributeDividends(uint256 amount) external;
 
@@ -44,7 +45,6 @@ contract Vault is Ownable, Pausable, IVault, DividendToken {
 
     uint256 public barrier = 1000; // 10 %
     uint256 public depositLimit;
-    uint256 public performanceFee = 1000; // 10 %
     uint256 public override lastDistributionAt;
 
     uint8 internal immutable underlyingDecimals;
@@ -99,11 +99,6 @@ contract Vault is Ownable, Pausable, IVault, DividendToken {
         depositLimit = _depositLimit;
     }
 
-    function setPerformanceFee(uint256 _performanceFee) external onlyOwner {
-        require(_performanceFee < BP, "Vault: performance fee too high");
-        performanceFee = _performanceFee;
-    }
-
     function setBarrier(uint256 _barrier) external onlyOwner {
         require(_barrier < BP, "Vault: barrier too high");
         barrier = _barrier;
@@ -142,17 +137,10 @@ contract Vault is Ownable, Pausable, IVault, DividendToken {
         underlying.safeTransfer(_msgSender(), amount);
     }
 
-    function harvest(uint256 amount) external override onlyHarvester returns (uint256 afterFee) {
+    function harvest(uint256 amount) external override onlyHarvester {
         require(amount <= underlyingYield(), "Vault: amount larger than generated yield");
         strategy.divest(amount);
-        if (performanceFee > 0) {
-            uint256 fee = (amount * performanceFee) / BP;
-            afterFee = amount - fee;
-            underlying.safeTransfer(owner(), fee);
-        } else {
-            afterFee = amount;
-        }
-        underlying.safeTransfer(address(harvester), afterFee);
+        underlying.safeTransfer(address(harvester), amount);
     }
 
     function distributeDividends(uint256 amount) external override onlyHarvester {
