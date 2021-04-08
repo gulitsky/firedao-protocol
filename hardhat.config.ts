@@ -3,10 +3,10 @@ import { HardhatUserConfig, task } from "hardhat/config";
 
 import "hardhat-spdx-license-identifier";
 import "@nomiclabs/hardhat-ethers";
-// import "hardhat-deploy-ethers";
 import "hardhat-typechain";
 import "hardhat-deploy";
 import "@nomiclabs/hardhat-waffle";
+import "@symfoni/hardhat-react";
 
 dotenv.config();
 const {
@@ -51,9 +51,28 @@ const config: HardhatUserConfig = {
     treasury: {
       default: 1,
     },
+    fireKeeper: {
+      default: 2,
+    },
     pancakeRouter: {
       default: "0x05fF2B0DB69458A0750badebc4f9e13aDd608C7F",
       "bsc-testnet": "0xD99D1c33F9fC3444f8101754aBC46c52416550D1",
+    },
+    dai: {
+      default: "0x1af3f329e8be154074d8769d1ffa4ee058b1dbc3",
+      "bsc-testnet": "0xEC5dCb5Dbf4B114C9d0F65BcCAb49EC54F6A0867",
+    },
+    cake: {
+      default: "0x0e09fabb73bd3ade0a17ecc321fd13a19e81ce82",
+    },
+    vDai: {
+      default: "0x334b3eCB4DCa3593BCCC3c7EBD1A1C1d1780FBF1",
+    },
+    unitroller: {
+      default: "0xfD36E2c2a6789Db23113685031d7F16329158384",
+    },
+    xvs: {
+      default: "0xcF6BB5389c92Bdda8a3747Ddb454cB7a64626C63",
     },
   },
   networks: {
@@ -86,6 +105,9 @@ const config: HardhatUserConfig = {
   },
   spdxLicenseIdentifier: {
     runOnCompile: true,
+  },
+  react: {
+    providerPriority: ["web3modal", "hardhat"],
   },
 };
 export default config;

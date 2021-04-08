@@ -1,11 +1,11 @@
-/node_modules/
+node_modules/
 
 # Hardhat files
 /artifacts/
 /cache/
 
 # Typechain artifacts
-/typechain/
+typechain/
 
 # Config file
 .env

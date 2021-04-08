@@ -30,7 +30,7 @@ import {
 import { BigNumber } from "@ethersproject/bignumber";
 
 describe("FIREDAO", () => {
-  let amount: BigNumber;
+  let daiAmount: BigNumber;
   let governance: SignerWithAddress,
     timelock: SignerWithAddress,
     treasury: SignerWithAddress,
@@ -57,13 +57,17 @@ describe("FIREDAO", () => {
       governance,
     );
 
-    amount = ethers.utils.parseUnits("100", await dai.decimals());
+    fire = await new FireFactory(whale).deploy(whale.address);
+    await fire.openTheGates();
+
+    daiAmount = ethers.utils.parseUnits("100", await dai.decimals());
   });
 
-  test("deploy FIRE and create pool", async () => {
-    fire = await new FireFactory(whale).deploy(whale.address);
-    await fire.approve(pancakeRouter.address, amount);
-    await cake.approve(pancakeRouter.address, amount);
+  test("create FIRE/CAKE pool", async () => {
+    const fireAmount = await fire.balanceOf(whale.address);
+    await fire.connect(whale).approve(pancakeRouter.address, fireAmount);
+    const cakeAmount = await cake.balanceOf(whale.address);
+    await cake.approve(pancakeRouter.address, cakeAmount);
 
     const currentBlock = await ethers.provider.getBlockNumber();
     const block = await ethers.provider.getBlock(currentBlock);
@@ -73,8 +77,8 @@ describe("FIREDAO", () => {
       .addLiquidity(
         fire.address,
         cake.address,
-        amount,
-        amount,
+        fireAmount,
+        cakeAmount,
         0,
         0,
         whale.address,
@@ -90,7 +94,7 @@ describe("FIREDAO", () => {
     expect(await harvester.pancakeRouter()).toBe(pancakeRouter.address);
   });
 
-  test("should deploy Vault with сorrect name, symbol, and addresses", async () => {
+  test("should deploy DAI->CAKE Vault with сorrect name, symbol, and addresses", async () => {
     vault = await new VaultFactory(governance).deploy(
       dai.address,
       cake.address,
@@ -138,17 +142,17 @@ describe("FIREDAO", () => {
     expect(await vault.paused()).toBe(false);
   });
 
-  test("should deposit", async () => {
-    await dai.approve(vault.address, amount);
-    await vault.connect(whale).deposit(amount);
-    expect(await dai.balanceOf(vault.address)).toStrictEqual(amount);
-    expect(await vault.balanceOf(whale.address)).toStrictEqual(amount);
+  test("should deposit DAI", async () => {
+    await dai.approve(vault.address, daiAmount);
+    await vault.connect(whale).deposit(daiAmount);
+    expect(await dai.balanceOf(vault.address)).toStrictEqual(daiAmount);
+    expect(await vault.balanceOf(whale.address)).toStrictEqual(daiAmount);
   });
 
   test("should earn", async () => {
     await vault.earn();
     const balance = await dai.balanceOf(vault.address);
-    expect(balance).toStrictEqual(amount.mul(1000).div(10000));
+    expect(balance).toStrictEqual(daiAmount.mul(1000).div(10000));
   });
 
   test("should harvest", async () => {
@@ -176,7 +180,7 @@ describe("FIREDAO", () => {
     expect(balance.gt(0)).toBe(true);
   });
 
-  test("should claim target token", async () => {
+  test("should claim CAKE", async () => {
     const balanceBefore = await cake.balanceOf(whale.address);
 
     const unclaimedProfit = await vault.unclaimedProfit(whale.address);
@@ -187,12 +191,12 @@ describe("FIREDAO", () => {
     expect(balanceAfter.sub(balanceBefore)).toStrictEqual(unclaimedProfit);
   });
 
-  test("should withdraw underlying token", async () => {
+  test("should withdraw DAI", async () => {
     const balanceBefore = await dai.balanceOf(whale.address);
 
-    await vault.connect(whale).withdraw(amount);
+    await vault.connect(whale).withdraw(daiAmount);
 
     const balanceAfter = await dai.balanceOf(whale.address);
-    expect(balanceAfter.sub(balanceBefore)).toStrictEqual(amount);
+    expect(balanceAfter.sub(balanceBefore)).toStrictEqual(daiAmount);
   });
 });

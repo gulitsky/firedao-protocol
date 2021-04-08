@@ -5,7 +5,11 @@ const func: DeployFunction = async function ({
   deployments,
 }) {
   const { deploy } = deployments;
-  const { deployer, pancakeRouter } = await getNamedAccounts();
-  await deploy("Harvester", { from: deployer, args: [treasury], log: true });
+  const { deployer, pancakeRouter, treasury } = await getNamedAccounts();
+  await deploy("Harvester", {
+    from: deployer,
+    args: [pancakeRouter, treasury],
+    log: true,
+  });
 };
 export default func;

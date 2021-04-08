@@ -5,7 +5,13 @@ const func: DeployFunction = async function ({
   deployments,
 }) {
   const { deploy } = deployments;
-  const { deployer, fireKeeper } = await getNamedAccounts();
-  await deploy("FIRE", { from: deployer, args: [fireKeeper], log: true });
+  const { deployer } = await getNamedAccounts();
+  const fire = await deployments.get("FIRE");
+
+  await deploy("GovernorAlpha", {
+    from: deployer,
+    args: [fire.address],
+    log: true,
+  });
 };
 export default func;
