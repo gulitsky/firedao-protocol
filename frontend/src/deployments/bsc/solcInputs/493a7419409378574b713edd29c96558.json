@@ -1,0 +1,35 @@
+{
+  "language": "Solidity",
+  "sources": {
+    "contracts/governance/MultiDelegator.sol": {
+      "content": "// SPDX-License-Identifier: AGPL-3.0\n\npragma solidity 0.8.3;\n\ninterface FireInterface {\n    function delegateBySig(\n        address delegatee,\n        uint256 nonce,\n        uint256 expiry,\n        uint8 v,\n        bytes32 r,\n        bytes32 s\n    ) external;\n}\n\ncontract MultiDelegator {\n    FireInterface public fire;\n\n    constructor(FireInterface _fire) {\n        fire = _fire;\n    }\n\n    function delegateBySig(\n        address delegatee,\n        uint256[] memory nonce,\n        uint256[] memory expiry,\n        uint8[] memory v,\n        bytes32[] memory r,\n        bytes32[] memory s\n    ) public {\n        for (uint256 i = 0; i < nonce.length; i++) {\n            fire.delegateBySig(delegatee, nonce[i], expiry[i], v[i], r[i], s[i]);\n        }\n    }\n}\n"
+    }
+  },
+  "settings": {
+    "optimizer": {
+      "enabled": true,
+      "runs": 200
+    },
+    "outputSelection": {
+      "*": {
+        "*": [
+          "abi",
+          "evm.bytecode",
+          "evm.deployedBytecode",
+          "evm.methodIdentifiers",
+          "metadata",
+          "devdoc",
+          "userdoc",
+          "storageLayout",
+          "evm.gasEstimates"
+        ],
+        "": [
+          "ast"
+        ]
+      }
+    },
+    "metadata": {
+      "useLiteralContent": true
+    }
+  }
+}

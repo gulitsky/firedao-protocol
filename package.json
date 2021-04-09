@@ -31,7 +31,7 @@
     "npm": "please-use-yarn",
     "yarn": ">=1.22.5"
   },
-  "license": "AGPL-3.0-or-later",
+  "license": "AGPL-3.0",
   "name": "firedao-protocol",
   "scripts": {
     "build": "yarn clean && yarn compile",
@@ -39,7 +39,8 @@
     "compile": "yarn lint && hardhat compile",
     "deploy": "hardhat deploy",
     "lint": "solhint ./contracts/**/*.sol",
-    "test": "jest --runInBand"
+    "test": "jest --runInBand",
+    "verify": "hardhat etherscan-verify"
   },
   "version": "1.0.0"
 }

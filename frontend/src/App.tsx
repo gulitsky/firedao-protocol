@@ -1,36 +1,23 @@
 import React, { useEffect, useState } from "react";
 import { useWeb3React } from "@web3-react/core";
 import { MetaMask } from "./connectors";
-import logo from "./logo.svg";
 import "./App.css";
+import Vault from "./Vault";
 
 function App() {
-  const { active, activate, library, error } = useWeb3React();
-  const [blockNumber, setBlockNumber] = useState(null);
+  const { active, activate, library } = useWeb3React();
 
   useEffect(() => {
     if (!active) {
       activate(MetaMask);
     }
-
-    if (active) {
-      library.getBlockNumber().then(setBlockNumber);
-    }
   }, [active, library, activate]);
 
-  let content = null;
-
-  if (error) {
-    content = "There was an error";
-  } else if (active) {
-    content = blockNumber
-      ? `Block number: ${blockNumber}`
-      : "Fetching block number";
-  } else {
-    content = "Loading...";
-  }
-
-  return <div className="App">{content}</div>;
+  return (
+    <div className="App">
+      <Vault></Vault>
+    </div>
+  );
 }
 
 export default App;

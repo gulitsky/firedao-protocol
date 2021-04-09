@@ -104,6 +104,7 @@ const config: HardhatUserConfig = {
   },
   spdxLicenseIdentifier: {
     runOnCompile: true,
+    overwrite: true,
   },
 };
 export default config;

@@ -2,21 +2,35 @@ import React, { useEffect, useState } from "react";
 import { useWeb3React } from "@web3-react/core";
 import { ethers, Contract, utils } from "ethers";
 
-import { abi as harvesterAbi } from "../../../deployments/localhost/Harvester.json";
-import { abi as vaultAbi } from "../../../deployments/localhost/Vault.json";
+import {
+  address as fireAddress,
+  abi as fireAbi,
+} from "./../deployments/bsc/FIRE.json";
+import {
+  address as harvesterAddress,
+  abi as harvesterAbi,
+} from "./../deployments/bsc/Harvester.json";
+import {
+  address as vaultAddress,
+  abi as vaultAbi,
+} from "./../deployments/bsc/Vault.json";
 
 export function useContract(address: string, abi: ethers.ContractInterface) {
-  const { library, active } = useWeb3React();
+  const { account, library, active } = useWeb3React();
   if (!library || !active) {
     return null;
   }
-  return new ethers.Contract(address, abi, library);
+  return new ethers.Contract(address, abi, library.getSigner(account));
 }
 
-export function useVault(address: string) {
-  return useContract(address, vaultAbi);
+export function useFire() {
+  return useContract(fireAddress, fireAbi);
 }
 
-export function useHarvester(address: string) {
-  return useContract(address, vaultAbi);
+export function useVault() {
+  return useContract(vaultAddress, vaultAbi);
+}
+
+export function useHarvester() {
+  return useContract(harvesterAddress, harvesterAbi);
 }
