@@ -71,7 +71,7 @@ contract Harvester is Ownable, IHarvester {
                 targetAmount,
                 0,
                 targetToFirePath,
-                address(1),
+                address(this),
                 block.timestamp + 1800
             );
             afterFee = afterFee - targetAmount;

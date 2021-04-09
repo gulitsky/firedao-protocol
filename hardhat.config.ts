@@ -6,7 +6,6 @@ import "@nomiclabs/hardhat-ethers";
 import "hardhat-typechain";
 import "hardhat-deploy";
 import "@nomiclabs/hardhat-waffle";
-import "@symfoni/hardhat-react";
 
 dotenv.config();
 const {
@@ -105,9 +104,6 @@ const config: HardhatUserConfig = {
   },
   spdxLicenseIdentifier: {
     runOnCompile: true,
-  },
-  react: {
-    providerPriority: ["web3modal", "hardhat"],
   },
 };
 export default config;
