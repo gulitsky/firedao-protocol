@@ -26,8 +26,12 @@ import {
   UNITROLLER_ADDRESS,
   WBNB_ADDRESS,
   impersonate,
+  advanceBlocks,
+  BLOCKS_PER_DAY,
 } from "./helpers";
 import { BigNumber } from "@ethersproject/bignumber";
+
+const BP = ethers.BigNumber.from(10000);
 
 describe("FIREDAO", () => {
   let daiAmount: BigNumber;
@@ -41,6 +45,7 @@ describe("FIREDAO", () => {
   let harvester: Harvester;
   let vault: Vault;
   let strategy: VenusStrategy;
+  let supplyRate: BigNumber;
 
   beforeAll(async () => {
     [governance, timelock, treasury] = await ethers.getSigners();
@@ -66,6 +71,8 @@ describe("FIREDAO", () => {
   test("create FIRE/CAKE pool", async () => {
     const fireAmount = await fire.balanceOf(whale.address);
     await fire.connect(whale).approve(pancakeRouter.address, fireAmount);
+    const daiAmount = await dai.balanceOf(whale.address);
+    await dai.approve(pancakeRouter.address, daiAmount);
     const cakeAmount = await cake.balanceOf(whale.address);
     await cake.approve(pancakeRouter.address, cakeAmount);
 
@@ -78,7 +85,7 @@ describe("FIREDAO", () => {
         fire.address,
         cake.address,
         fireAmount,
-        cakeAmount,
+        cakeAmount.div(2),
         0,
         0,
         whale.address,
@@ -151,22 +158,48 @@ describe("FIREDAO", () => {
 
   test("should earn", async () => {
     await vault.earn();
-    const balance = await dai.balanceOf(vault.address);
-    expect(balance).toStrictEqual(daiAmount.mul(1000).div(10000));
+    supplyRate = await vDai.callStatic.supplyRatePerBlock();
+
+    let balance = await dai.balanceOf(vault.address);
+    const barrier = await vault.barrier();
+    expect(balance).toStrictEqual(daiAmount.mul(barrier).div(BP));
   });
 
   test("should harvest", async () => {
-    const currentBlock = await ethers.provider.getBlockNumber();
-    const block = await ethers.provider.getBlock(currentBlock);
-    const future = block.timestamp + 178800;
-    await network.provider.request({
-      method: "evm_setNextBlockTimestamp",
-      params: [future],
-    });
+    await advanceBlocks(BLOCKS_PER_DAY);
+    const block = await ethers.provider.getBlock("latest");
+    const future = block.timestamp + 90;
 
     await vault.underlyingYield();
     const y = await vault.callStatic.underlyingYield();
-    expect(y.gt(0)).toBe(true);
+    const underlyingBalance = await dai.balanceOf(vault.address);
+    const venusUnderlyingBalance = await vDai.callStatic.balanceOfUnderlying(
+      strategy.address,
+    );
+    const totalSupply = await vault.totalSupply();
+    expect(y).toStrictEqual(
+      venusUnderlyingBalance.add(underlyingBalance).sub(totalSupply),
+    );
+
+    const fireBuyBack = await harvester.fireBuyBack();
+    const [, cakeAmount] = await pancakeRouter
+      .connect(whale)
+      .callStatic.swapExactTokensForTokens(
+        y,
+        0,
+        [dai.address, cake.address],
+        harvester.address,
+        future,
+      );
+    const [, fireAmount] = await pancakeRouter
+      .connect(whale)
+      .callStatic.swapExactTokensForTokens(
+        cakeAmount.mul(fireBuyBack).div(BP),
+        0,
+        [cake.address, fire.address],
+        harvester.address,
+        future,
+      );
 
     await harvester.harvestVault(
       vault.address,
@@ -176,15 +209,21 @@ describe("FIREDAO", () => {
       [cake.address, fire.address],
       future + 10,
     );
-    const balance = await cake.balanceOf(vault.address);
-    expect(balance.gt(0)).toBe(true);
+
+    let balance = await cake.balanceOf(treasury.address);
+    const performanceFee = await harvester.performanceFee();
+    expect(balance).toStrictEqual(cakeAmount.mul(performanceFee).div(BP));
+
+    balance = await fire.balanceOf(harvester.address);
+    expect(balance).toStrictEqual(fireAmount);
   });
 
   test("should claim CAKE", async () => {
+    const balance = await cake.balanceOf(vault.address);
     const balanceBefore = await cake.balanceOf(whale.address);
 
     const unclaimedProfit = await vault.unclaimedProfit(whale.address);
-    expect(unclaimedProfit.gt(0)).toBe(true);
+    expect(unclaimedProfit).toStrictEqual(balance.sub(1));
     await vault.connect(whale).claim();
 
     const balanceAfter = await cake.balanceOf(whale.address);

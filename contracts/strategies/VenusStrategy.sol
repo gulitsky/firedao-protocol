@@ -26,6 +26,10 @@ interface IVToken is IERC20Metadata {
     function underlying() external view returns (address);
 
     function balanceOfUnderlying(address account) external returns (uint256);
+
+    function exchangeRateCurrent() external returns (uint256);
+
+    function supplyRatePerBlock() external returns (uint256);
 }
 
 contract VenusStrategy is Ownable, IStrategy {
