@@ -166,9 +166,13 @@ describe("FIREDAO", () => {
   });
 
   test("should harvest", async () => {
-    await advanceBlocks(BLOCKS_PER_DAY);
-    const block = await ethers.provider.getBlock("latest");
-    const future = block.timestamp + 90;
+    const currentBlock = await ethers.provider.getBlockNumber();
+    const block = await ethers.provider.getBlock(currentBlock);
+    const future = block.timestamp + 178800;
+    await network.provider.request({
+      method: "evm_setNextBlockTimestamp",
+      params: [future],
+    });
 
     await vault.underlyingYield();
     const y = await vault.callStatic.underlyingYield();
@@ -189,7 +193,7 @@ describe("FIREDAO", () => {
         0,
         [dai.address, cake.address],
         harvester.address,
-        future,
+        future + 1000,
       );
     const [, fireAmount] = await pancakeRouter
       .connect(whale)
@@ -198,7 +202,7 @@ describe("FIREDAO", () => {
         0,
         [cake.address, fire.address],
         harvester.address,
-        future,
+        future + 1000,
       );
 
     await harvester.harvestVault(
@@ -207,7 +211,7 @@ describe("FIREDAO", () => {
       0,
       [dai.address, cake.address],
       [cake.address, fire.address],
-      future + 10,
+      future + 1000,
     );
 
     let balance = await cake.balanceOf(treasury.address);

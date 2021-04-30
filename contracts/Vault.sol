@@ -181,3 +181,11 @@ contract Vault is Ownable, Pausable, IVault, DividendToken {
         return targetToken;
     }
 }
+
+contract DirectVault is Vault {
+    constructor(
+        IERC20Metadata _underlying,
+        IHarvester _harvester,
+        address _timelock
+    ) Vault(_underlying, _underlying, _harvester, _timelock) {}
+}
