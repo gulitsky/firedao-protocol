@@ -71,8 +71,8 @@ describe("FIREDAO", () => {
   test("create FIRE/CAKE pool", async () => {
     const fireAmount = await fire.balanceOf(whale.address);
     await fire.connect(whale).approve(pancakeRouter.address, fireAmount);
-    const daiAmount = await dai.balanceOf(whale.address);
-    await dai.approve(pancakeRouter.address, daiAmount);
+    const daiBalance = await dai.balanceOf(whale.address);
+    await dai.approve(pancakeRouter.address, daiBalance);
     const cakeAmount = await cake.balanceOf(whale.address);
     await cake.approve(pancakeRouter.address, cakeAmount);
 

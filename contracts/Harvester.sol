@@ -3,9 +3,10 @@
 pragma solidity 0.8.3;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
 
-import "./interfaces/IERC20Metadata.sol";
 import "./interfaces/IPancakeRouter.sol";
 import {IVault} from "./Vault.sol";
 
@@ -20,9 +21,10 @@ interface IHarvester {
     ) external;
 }
 
-contract Harvester is Ownable, IHarvester {
+contract Harvester is AccessControl, Ownable, IHarvester {
     using SafeERC20 for IERC20Metadata;
 
+    bytes32 public constant HARVESTER_ROLE = keccak256("HARVESTER_ROLE");
     uint256 internal constant BP = 10000; // 100 %
 
     IPancakeRouter public pancakeRouter;
@@ -32,6 +34,9 @@ contract Harvester is Ownable, IHarvester {
     mapping(IVault => uint256) public ratePerToken;
 
     constructor(IPancakeRouter _pancakeRouter, address _treasury) {
+        _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
+        _setupRole(HARVESTER_ROLE, _msgSender());
+
         pancakeRouter = _pancakeRouter;
         treasury = _treasury;
     }
@@ -43,7 +48,9 @@ contract Harvester is Ownable, IHarvester {
         address[] calldata path,
         address[] calldata targetToFirePath,
         uint256 deadline
-    ) external override onlyOwner {
+    ) external override {
+        require(hasRole(HARVESTER_ROLE, _msgSender()), "Harvester: not whitelisted");
+
         uint256 amount = amountIn;
         IERC20Metadata from = vault.underlying();
         uint256 afterFee = amount - ((amount * (performanceFee + fireBuyBack)) / BP);
