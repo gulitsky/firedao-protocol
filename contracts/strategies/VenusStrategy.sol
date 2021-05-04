@@ -5,6 +5,7 @@ pragma solidity 0.8.3;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
 
 import "./../interfaces/IPancakeRouter.sol";
 import {IVault} from "./../Vault.sol";
@@ -33,6 +34,7 @@ interface IVToken is IERC20Metadata {
 }
 
 contract VenusStrategy is Ownable, IStrategy {
+    using Math for uint256;
     using SafeERC20 for IERC20Metadata;
 
     IPancakeRouter public pancakeRouter;
@@ -114,7 +116,8 @@ contract VenusStrategy is Ownable, IStrategy {
             require(missingAmount <= withdrawalCap, "VenusStrategy: reached withdrawal cap");
             vToken.redeemUnderlying(missingAmount);
         }
-        underlying.safeTransfer(address(vault), amount);
+        balance = underlying.balanceOf(address(this));
+        underlying.safeTransfer(address(vault), Math.min(amount, balance));
     }
 
     function rescue(

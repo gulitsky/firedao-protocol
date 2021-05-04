@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
 
 import "./interfaces/IPancakeRouter.sol";
 import {IHarvester} from "./Harvester.sol";
@@ -32,9 +33,10 @@ interface IVault is IDividendToken {
     function lastDistributionAt() external view returns (uint256);
 }
 
-contract Vault is Ownable, Pausable, IVault, DividendToken {
+contract Vault is AccessControl, Ownable, Pausable, IVault, DividendToken {
     using SafeERC20 for IERC20Metadata;
 
+    bytes32 public constant EARNER_ROLE = keccak256("EARNER_ROLE");
     uint256 internal constant BP = 10000; // 100 %
 
     IHarvester public harvester;
@@ -44,6 +46,7 @@ contract Vault is Ownable, Pausable, IVault, DividendToken {
     IERC20Metadata public immutable override underlying;
 
     uint256 public barrier = 1000; // 10 %
+    uint256 public withdrawalFee = 1; // 0.01 %
     uint256 public depositLimit;
     uint256 public override lastDistributionAt;
 
@@ -66,6 +69,9 @@ contract Vault is Ownable, Pausable, IVault, DividendToken {
             _target
         )
     {
+        _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
+        _setupRole(EARNER_ROLE, _msgSender());
+
         underlying = _underlying;
         underlyingDecimals = _underlying.decimals();
         harvester = _harvester;
@@ -104,6 +110,11 @@ contract Vault is Ownable, Pausable, IVault, DividendToken {
         barrier = _barrier;
     }
 
+    function setWithdrawalFee(uint256 _withdrawalFee) external onlyOwner {
+        require(_withdrawalFee < BP, "Vault: withdrawal fee too high");
+        withdrawalFee = _withdrawalFee;
+    }
+
     function deposit(uint256 amount) external override {
         if (depositLimit > 0) {
             require(totalSupply() + amount <= depositLimit, "Vault: total supply will exceed deposit limit");
@@ -112,7 +123,9 @@ contract Vault is Ownable, Pausable, IVault, DividendToken {
         _mint(_msgSender(), amount);
     }
 
-    function earn() external override onlyOwner {
+    function earn() external override {
+        require(hasRole(EARNER_ROLE, _msgSender()), "Vault: not whitelisted");
+
         uint256 balance = underlying.balanceOf(address(this));
         uint256 amount = balance - ((balance * barrier) / BP);
         underlying.safeTransfer(address(strategy), amount);
@@ -134,7 +147,8 @@ contract Vault is Ownable, Pausable, IVault, DividendToken {
         if (amount > balance) {
             strategy.divest(amount - balance);
         }
-        underlying.safeTransfer(_msgSender(), amount);
+        uint256 _withdrawalFee = (amount * withdrawalFee) / BP;
+        underlying.safeTransfer(_msgSender(), amount - _withdrawalFee);
     }
 
     function harvest(uint256 amount) external override onlyHarvester {

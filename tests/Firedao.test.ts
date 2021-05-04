@@ -240,6 +240,9 @@ describe("FIREDAO", () => {
     await vault.connect(whale).withdraw(daiAmount);
 
     const balanceAfter = await dai.balanceOf(whale.address);
-    expect(balanceAfter.sub(balanceBefore)).toStrictEqual(daiAmount);
+    const withdrawalFee = await vault.withdrawalFee();
+    expect(balanceAfter.sub(balanceBefore)).toStrictEqual(
+      daiAmount.sub(daiAmount.mul(withdrawalFee).div(BP)),
+    );
   });
 });

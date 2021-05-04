@@ -27,8 +27,8 @@ export function useFire() {
   return useContract(fireAddress, fireAbi);
 }
 
-export function useVault() {
-  return useContract(vaultAddress, vaultAbi);
+export function useVault(address: string) {
+  return useContract(address, vaultAbi);
 }
 
 export function useHarvester() {

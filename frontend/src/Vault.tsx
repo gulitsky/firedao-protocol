@@ -4,10 +4,10 @@ import React, { useEffect, useState } from "react";
 import { useFire, useHarvester, useVault } from "./hooks/useContract";
 import "./Vault.css";
 
-function Vault() {
+function Vault(props: any) {
   const fire = useFire();
   const harvester = useHarvester();
-  const vault = useVault();
+  const vault = useVault(props.address);
 
   const [name, setName] = useState("");
   const [decimals, setDecimals] = useState(0);
