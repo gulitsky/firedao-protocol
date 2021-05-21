@@ -47,6 +47,7 @@ contract VenusStrategy is Ownable, IStrategy {
     uint256 public immutable minWithdrawalCap;
     uint256 public withdrawalCap = type(uint256).max;
     address[] public xvsToUnderlyingPath;
+    bool public reinvestXvs;
 
     modifier onlyStrategist {
         require(
@@ -68,10 +69,12 @@ contract VenusStrategy is Ownable, IStrategy {
         IERC20Metadata _xvs,
         address _timelock,
         IPancakeRouter _pancakeRouter,
-        address[] memory _xvsToUnderlyingPath
+        address[] memory _xvsToUnderlyingPath,
+        bool _reinvestXvs
     ) {
         require(_xvsToUnderlyingPath.length >= 2, "VenusStrategy: path length must be >= 2");
         xvsToUnderlyingPath = _xvsToUnderlyingPath;
+        reinvestXvs = _reinvestXvs;
         strategist = _msgSender();
         vault = _vault;
         vToken = _vToken;
@@ -101,13 +104,16 @@ contract VenusStrategy is Ownable, IStrategy {
         uint256 balance = xvs.balanceOf(address(this));
         if (balance > 0) {
             xvs.approve(address(pancakeRouter), balance);
-            pancakeRouter.swapExactTokensForTokens(
+            balance = pancakeRouter.swapExactTokensForTokens(
                 balance,
                 0,
                 xvsToUnderlyingPath,
                 address(this),
                 block.timestamp + 1800
-            );
+            )[xvsToUnderlyingPath.length - 1];
+            if (reinvestXvs) {
+                require(vToken.mint(balance) == 0);
+            }
         }
 
         balance = underlying.balanceOf(address(this));

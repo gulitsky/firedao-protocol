@@ -26,6 +26,7 @@ const func: DeployFunction = async function ({
       timelock,
       pancakeRouter,
       [xvs, dai],
+      false,
     ],
     log: true,
   });

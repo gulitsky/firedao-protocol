@@ -132,6 +132,7 @@ describe("FIREDAO", () => {
       timelock.address,
       pancakeRouter.address,
       [xvs.address, WBNB_ADDRESS, dai.address],
+      true,
     );
     expect(await strategy.strategist()).toBe(governance.address);
     expect(await strategy.vault()).toBe(vault.address);
@@ -141,6 +142,7 @@ describe("FIREDAO", () => {
     expect(await strategy.xvs()).toBe(xvs.address);
     expect(await strategy.pancakeRouter()).toBe(pancakeRouter.address);
     expect(await strategy.owner()).toBe(timelock.address);
+    expect(await strategy.reinvestXvs()).toBe(true);
   });
 
   test("should connect Venus Strategy to Vault", async () => {

@@ -32,11 +32,12 @@ const func: DeployFunction = async function ({
       timelock,
       pancakeRouter,
       [xvs, dai],
+      true,
     ],
     log: true,
   });
   await deployments.execute(
-    "DirectVault",
+    "Compound",
     { from: deployer },
     "setStrategy",
     venusStrategy.address,

@@ -196,7 +196,7 @@ contract Vault is AccessControl, Ownable, Pausable, IVault, DividendToken {
     }
 }
 
-contract DirectVault is Vault {
+contract CompoundVault is Vault {
     constructor(
         IERC20Metadata _underlying,
         IHarvester _harvester,
