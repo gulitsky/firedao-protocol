@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0
 
-pragma solidity 0.8.3;
+pragma solidity 0.8.4;
 
 contract FIRE {
     /// @notice EIP-20 token name for this token

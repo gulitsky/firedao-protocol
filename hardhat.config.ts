@@ -13,7 +13,7 @@ const {
   MNEMONIC,
   OPTIMIZE = "true",
   OPTIMIZER_RUNS = "200",
-  SOLIDITY_VERSION = "0.8.3",
+  SOLIDITY_VERSION = "0.8.4",
 } = process.env;
 
 if (!MNEMONIC) {
