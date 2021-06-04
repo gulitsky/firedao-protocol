@@ -1,4 +1,4 @@
-import { ethers, network } from "hardhat";
+/* import { ethers, network } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import {
   IERC20Metadata as ERC20,
@@ -26,8 +26,6 @@ import {
   UNITROLLER_ADDRESS,
   WBNB_ADDRESS,
   impersonate,
-  advanceBlocks,
-  BLOCKS_PER_DAY,
 } from "./helpers";
 import { BigNumber } from "@ethersproject/bignumber";
 
@@ -45,7 +43,6 @@ describe("FIREDAO", () => {
   let harvester: Harvester;
   let vault: Vault;
   let strategy: VenusStrategy;
-  let supplyRate: BigNumber;
 
   beforeAll(async () => {
     [governance, timelock, treasury] = await ethers.getSigners();
@@ -160,7 +157,6 @@ describe("FIREDAO", () => {
 
   test("should earn", async () => {
     await vault.earn();
-    supplyRate = await vDai.callStatic.supplyRatePerBlock();
 
     let balance = await dai.balanceOf(vault.address);
     const barrier = await vault.barrier();
@@ -248,3 +244,4 @@ describe("FIREDAO", () => {
     );
   });
 });
+ */

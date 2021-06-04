@@ -3,7 +3,7 @@ import { HardhatUserConfig, task } from "hardhat/config";
 
 import "hardhat-spdx-license-identifier";
 import "@nomiclabs/hardhat-ethers";
-import "hardhat-typechain";
+import "@typechain/hardhat";
 import "hardhat-deploy";
 import "@nomiclabs/hardhat-waffle";
 
@@ -72,6 +72,18 @@ const config: HardhatUserConfig = {
     },
     xvs: {
       default: "0xcF6BB5389c92Bdda8a3747Ddb454cB7a64626C63",
+    },
+    masterBelt: {
+      default: "0xD4BbC80b9B102b77B21A06cb77E954049605E6c1",
+    },
+    belt: {
+      default: "0xE0e514c71282b6f4e823703a39374Cf58dc3eA4f",
+    },
+    fourBelt: {
+      default: "0x9cb73F20164e399958261c289Eb5F9846f4D1404",
+    },
+    bUsdT: {
+      default: "0x55d398326f99059fF775485246999027B3197955",
     },
   },
   networks: {

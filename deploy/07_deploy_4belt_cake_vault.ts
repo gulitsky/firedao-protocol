@@ -1,40 +1,42 @@
 import { DeployFunction } from "hardhat-deploy/types";
 
+const PID = 3;
+
 const func: DeployFunction = async function ({
   getNamedAccounts,
   deployments,
 }) {
   const { deploy } = deployments;
-  const { deployer, dai, pancakeRouter, vDai, unitroller, xvs } =
+  const { deployer, cake, fourBelt, masterBelt, belt, pancakeRouter, bUsdT } =
     await getNamedAccounts();
   const harvester = await deployments.get("Harvester");
   const timelock = await deployments.read("GovernorAlpha", "timelock");
 
-  const vault = await deploy("DirectVault", {
+  const vault = await deploy("Vault", {
     from: deployer,
-    args: [dai, harvester.address, timelock],
+    args: [fourBelt, cake, harvester.address, timelock],
     log: true,
   });
 
-  const venusStrategy = await deploy("VenusStrategy", {
+  const beltFiStrategy = await deploy("BeltFiStrategy", {
     from: deployer,
     args: [
       vault.address,
-      vDai,
-      unitroller,
-      xvs,
+      masterBelt,
+      PID,
+      fourBelt,
+      belt,
       timelock,
       pancakeRouter,
-      [xvs, dai],
-      true,
+      [belt, bUsdT, fourBelt],
     ],
     log: true,
   });
   await deployments.execute(
-    "CompoundVault",
+    "Vault",
     { from: deployer },
     "setStrategy",
-    venusStrategy.address,
+    beltFiStrategy.address,
     true,
   );
 };
