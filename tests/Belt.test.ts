@@ -181,21 +181,25 @@ describe("FIREDAO", () => {
         0,
         [fourBelt.address, BUSD_T_ADDRESS, cake.address],
         harvester.address,
-        future + 1000,
+        future + 10000,
       );
 
     await harvester.harvestVault(
       vault.address,
       y,
-      0,
+      cakeAmount,
       [fourBelt.address, BUSD_T_ADDRESS, cake.address],
       [fourBelt.address, BUSD_T_ADDRESS, cake.address],
-      future + 1000,
+      future + 10000,
     );
 
-    let balance = await cake.balanceOf(treasury.address);
+    const treasuryBalance = await cake.balanceOf(treasury.address);
+    const vaultBalance = await cake.balanceOf(vault.address);
+    const balance = treasuryBalance.add(vaultBalance);
+    expect(balance.gte(cakeAmount)).toBe(true);
+
     const performanceFee = await harvester.performanceFee();
-    expect(balance).toStrictEqual(cakeAmount.mul(performanceFee).div(BP));
+    expect(treasuryBalance).toStrictEqual(balance.mul(performanceFee).div(BP));
   });
 
   test("should withdraw 4BELT", async () => {
