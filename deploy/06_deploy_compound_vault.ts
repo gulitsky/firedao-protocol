@@ -5,14 +5,14 @@ const func: DeployFunction = async function ({
   deployments,
 }) {
   const { deploy } = deployments;
-  const { deployer, dai, pancakeRouter, vDai, unitroller, xvs } =
+  const { deployer, usdt, pancakeRouter, vUsdt, unitroller, xvs } =
     await getNamedAccounts();
   const harvester = await deployments.get("Harvester");
   const timelock = await deployments.read("GovernorAlpha", "timelock");
 
-  const vault = await deploy("DirectVault", {
+  const vault = await deploy("CompoundVault", {
     from: deployer,
-    args: [dai, harvester.address, timelock],
+    args: [usdt, harvester.address, timelock],
     log: true,
   });
 
@@ -20,12 +20,12 @@ const func: DeployFunction = async function ({
     from: deployer,
     args: [
       vault.address,
-      vDai,
+      vUsdt,
       unitroller,
       xvs,
       timelock,
       pancakeRouter,
-      [xvs, dai],
+      [xvs, usdt],
       true,
     ],
     log: true,

@@ -7,9 +7,9 @@ const func: DeployFunction = async function ({
   const { deploy } = deployments;
   const {
     deployer,
-    dai,
+    usdt,
     pancakeRouter,
-    vDai,
+    vUsdt,
     unitroller,
     xvs,
   } = await getNamedAccounts();
@@ -20,12 +20,12 @@ const func: DeployFunction = async function ({
     from: deployer,
     args: [
       vault.address,
-      vDai,
+      vUsdt,
       unitroller,
       xvs,
       timelock,
       pancakeRouter,
-      [xvs, dai],
+      [xvs, usdt],
       false,
     ],
     log: true,

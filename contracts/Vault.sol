@@ -16,6 +16,8 @@ import "./strategies/IStrategy.sol";
 interface IVault is IDividendToken {
     function deposit(uint256) external;
 
+    function depositOnBehalf(address, uint256) external;
+
     function earn() external;
 
     function claim() external;
@@ -121,6 +123,14 @@ contract Vault is AccessControl, Ownable, Pausable, IVault, DividendToken {
         }
         underlying.safeTransferFrom(_msgSender(), address(this), amount);
         _mint(_msgSender(), amount);
+    }
+
+    function depositOnBehalf(address account, uint256 amount) external override {
+        if (depositLimit > 0) {
+            require(totalSupply() + amount <= depositLimit, "Vault: total supply will exceed deposit limit");
+        }
+        underlying.safeTransferFrom(_msgSender(), address(this), amount);
+        _mint(account, amount);
     }
 
     function earn() external override {
