@@ -15,7 +15,15 @@ interface IFire is IERC20 {
     function seize(address src, uint256 rawAmount) external;
 }
 
-contract LiquidityMining is Ownable {
+interface IFarm {
+    function deposit(address account, uint256 amount) external;
+
+    function withdraw(address account, uint256 amount) external;
+
+    function transfer(address sender, address recipient, uint256 amount) external;
+}
+
+contract Farm is IFarm, Ownable {
     using SafeERC20 for IERC20Metadata;
     using SafeERC20 for IFire;
 
@@ -36,17 +44,37 @@ contract LiquidityMining is Ownable {
     uint256 public constant FIRE_PER_BLOCK = 1909722222222222222;
     uint256 public constant START_BLOCK = 10000000;
 
+    uint256 public vaultsCount;
+
     IFire public immutable fire;
+    mapping(IERC20Metadata => mapping(IERC20Metadata => IVault)) public vaults;
+    mapping(IVault => bool) public vaultStatuses;
     mapping(IERC20Metadata => Pool) public pools;
     mapping(IERC20Metadata => mapping(address => User)) public users;
     uint256 public totalAllocPoint;
 
-    event Deposit(address indexed user, IVault indexed vault, uint256 amount);
-    event Withdraw(address indexed user, IVault indexed vault, uint256 amount);
-    event Claim(address indexed user, IVault indexed vault, uint256 amount);
+    event Deposit(address indexed user, IERC20Metadata indexed pool, uint256 amount);
+    event Withdraw(address indexed user, IERC20Metadata indexed pool, uint256 amount);
+    event Claim(address indexed user, IERC20Metadata indexed pool, uint256 amount);
+
+    modifier onlyVaults {
+        require(vaultStatuses[IVault(msg.sender)], "FIREDAO: Only vault allowed");
+        _;
+    }
 
     constructor(IFire _fire) {
         fire = _fire;
+    }
+
+    function addVault(IVault vault) external onlyOwner {
+        require(!vaultStatuses[vault], "FIREDAO: Vault already exists");
+
+        IERC20Metadata underlying = vault.underlying();
+        IERC20Metadata target = vault.target();
+
+        vaults[underlying][target] = vault;
+        vaultStatuses[vault] = true;
+        vaultsCount++;
     }
 
     function addPool(IERC20Metadata token, uint256 allocPoint) external onlyOwner {
@@ -66,39 +94,74 @@ contract LiquidityMining is Ownable {
         pools[token].allocPoint = allocPoint;
     }
 
-    function deposit(IVault vault, uint256 amount) external {
+    function deposit(address account, uint256 amount) public override onlyVaults {
+        IVault vault = IVault(msg.sender);
         IERC20Metadata underlying = vault.underlying();
 
         updatePool(underlying);
         Pool memory pool = pools[underlying];
-        User storage user = users[underlying][msg.sender];
+        User storage user = users[underlying][account];
 
         uint256 shares = user.shares;
         if (shares > 0) {
             uint256 pending = ((shares * pool.accFirePerShare) / 1e12) - user.rewardDebt;
             if (pending > 0) {
-                fire.safeTransfer(msg.sender, pending);
+                fire.safeTransfer(account, pending);
             }
         }
+
         if (amount > 0) {
-            underlying.safeTransferFrom(address(msg.sender), address(this), amount);
-            underlying.safeIncreaseAllowance(address(vault), amount);
-            vault.depositOnBehalf(msg.sender, amount);
             user.shares += amount;
         }
+
         user.rewardDebt = (user.shares * pool.accFirePerShare) / 1e12;
-        emit Deposit(msg.sender, vault, amount);
+        emit Deposit(account, underlying, amount);
     }
 
-    function withdraw(IVault vault, uint256 amount) external {
+    function withdraw(address account, uint256 amount) public override onlyVaults {
+        IVault vault = IVault(msg.sender);
         IERC20Metadata underlying = vault.underlying();
 
         updatePool(underlying);
-        Pool storage pool = pools[underlying];
-        User storage user = users[underlying][msg.sender];
+        Pool memory pool = pools[underlying];
+        User storage user = users[underlying][account];
+
+        require(user.shares > 0, "user.shares is 0");
+        require(pool.sharesTotal > 0, "pool.sharesTotal is 0");
+
+        // Withdraw pending FIRE
+        uint256 pending = ((user.shares * pool.accFirePerShare) / 1e12) - user.rewardDebt;
+        if (pending > 0) {
+            fire.safeTransfer(account, pending);
+        }
+
+        if (amount > user.shares) {
+            user.shares = 0;
+        } else {
+            user.shares -= amount;
+        }
+
+        user.rewardDebt = (user.shares * pool.accFirePerShare) / 1e12;
+        emit Withdraw(account, underlying, amount);
     }
 
-    function claim(uint256 amount) external {}
+    function transfer(address sender, address recipient, uint256 amount) external override onlyVaults {
+        withdraw(sender, amount);
+        deposit(recipient, amount);
+    }
+
+    function claim(IERC20Metadata token) external {
+        updatePool(token);
+        Pool memory pool = pools[token];
+        User storage user = users[token][msg.sender];
+
+        uint256 pending = ((user.shares * pool.accFirePerShare) / 1e12) - user.rewardDebt;
+        if (pending > 0) {
+            fire.safeTransfer(msg.sender, pending);
+        }
+
+        user.rewardDebt = (user.shares * pool.accFirePerShare) / 1e12;
+    }
 
     function sweep(IERC20Metadata token) external onlyOwner {
         require(address(token) != address(fire), "LiquidityMining: sweeping of FIRE token not allowed");

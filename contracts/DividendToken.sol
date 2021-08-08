@@ -73,7 +73,7 @@ abstract contract DividendToken is IDividendToken, ERC20 {
         address sender,
         address recipient,
         uint256 amount
-    ) internal override {
+    ) internal override virtual {
         super._transfer(sender, recipient, amount);
 
         int256 magCorrection = (magnifiedDividendPerShare * amount).toInt256();

@@ -7,16 +7,16 @@ import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 import "./interfaces/IPancakeRouter.sol";
 import {IHarvester} from "./Harvester.sol";
 import "./DividendToken.sol";
 import "./strategies/IStrategy.sol";
+import {IFarm} from "./Farm.sol";
 
 interface IVault is IDividendToken {
     function deposit(uint256) external;
-
-    function depositOnBehalf(address, uint256) external;
 
     function earn() external;
 
@@ -35,13 +35,14 @@ interface IVault is IDividendToken {
     function lastDistributionAt() external view returns (uint256);
 }
 
-contract Vault is AccessControl, Ownable, Pausable, IVault, DividendToken {
+contract Vault is AccessControl, Ownable, Pausable, IVault, DividendToken, ReentrancyGuard {
     using SafeERC20 for IERC20Metadata;
 
     bytes32 public constant EARNER_ROLE = keccak256("EARNER_ROLE");
     uint256 internal constant BP = 10000; // 100 %
 
     IHarvester public harvester;
+    IFarm public farm;
     address public timelock;
     IStrategy public strategy;
 
@@ -63,7 +64,8 @@ contract Vault is AccessControl, Ownable, Pausable, IVault, DividendToken {
         IERC20Metadata _underlying,
         IERC20Metadata _target,
         IHarvester _harvester,
-        address _timelock
+        address _timelock,
+        IFarm _farm
     )
         DividendToken(
             string(abi.encodePacked("FIREDAO ", _underlying.symbol(), " to ", _target.symbol(), " Yield Token")),
@@ -77,6 +79,7 @@ contract Vault is AccessControl, Ownable, Pausable, IVault, DividendToken {
         underlying = _underlying;
         underlyingDecimals = _underlying.decimals();
         harvester = _harvester;
+        farm = _farm;
         timelock = _timelock;
         depositLimit = 20000 * (10**_underlying.decimals());
         _pause();
@@ -117,20 +120,14 @@ contract Vault is AccessControl, Ownable, Pausable, IVault, DividendToken {
         withdrawalFee = _withdrawalFee;
     }
 
-    function deposit(uint256 amount) external override {
+    function deposit(uint256 amount) external override nonReentrant {
         if (depositLimit > 0) {
             require(totalSupply() + amount <= depositLimit, "Vault: total supply will exceed deposit limit");
         }
         underlying.safeTransferFrom(_msgSender(), address(this), amount);
         _mint(_msgSender(), amount);
-    }
 
-    function depositOnBehalf(address account, uint256 amount) external override {
-        if (depositLimit > 0) {
-            require(totalSupply() + amount <= depositLimit, "Vault: total supply will exceed deposit limit");
-        }
-        underlying.safeTransferFrom(_msgSender(), address(this), amount);
-        _mint(account, amount);
+        farm.deposit(_msgSender(), amount);
     }
 
     function earn() external override {
@@ -151,13 +148,16 @@ contract Vault is AccessControl, Ownable, Pausable, IVault, DividendToken {
         withdrawDividend(account);
     }
 
-    function withdraw(uint256 amount) external override {
+    function withdraw(uint256 amount) external override nonReentrant {
         _burn(_msgSender(), amount);
         uint256 balance = underlying.balanceOf(address(this));
         if (amount > balance) {
             strategy.divest(amount - balance);
         }
         uint256 _withdrawalFee = (amount * withdrawalFee) / BP;
+
+        farm.withdraw(_msgSender(), amount);
+
         underlying.safeTransfer(_msgSender(), amount - _withdrawalFee);
     }
 
@@ -204,12 +204,22 @@ contract Vault is AccessControl, Ownable, Pausable, IVault, DividendToken {
     function target() public view override returns (IERC20Metadata) {
         return targetToken;
     }
+
+    function _transfer(
+        address sender,
+        address recipient,
+        uint256 amount
+    ) internal override {
+        super._transfer(sender, recipient, amount);
+        farm.transfer(sender, recipient, amount);
+    }
 }
 
 contract CompoundVault is Vault {
     constructor(
         IERC20Metadata _underlying,
         IHarvester _harvester,
-        address _timelock
-    ) Vault(_underlying, _underlying, _harvester, _timelock) {}
+        address _timelock,
+        IFarm _farm
+    ) Vault(_underlying, _underlying, _harvester, _timelock, _farm) {}
 }
