@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 import {IVault} from "./Vault.sol";
 
@@ -20,10 +21,14 @@ interface IFarm {
 
     function withdraw(address account, uint256 amount) external;
 
-    function transfer(address sender, address recipient, uint256 amount) external;
+    function transfer(
+        address sender,
+        address recipient,
+        uint256 amount
+    ) external;
 }
 
-contract Farm is IFarm, Ownable {
+contract Farm is IFarm, Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20Metadata;
     using SafeERC20 for IFire;
 
@@ -47,6 +52,7 @@ contract Farm is IFarm, Ownable {
     uint256 public vaultsCount;
 
     IFire public immutable fire;
+    IERC20Metadata public immutable lpToken;
     mapping(IERC20Metadata => mapping(IERC20Metadata => IVault)) public vaults;
     mapping(IVault => bool) public vaultStatuses;
     mapping(IERC20Metadata => Pool) public pools;
@@ -62,8 +68,9 @@ contract Farm is IFarm, Ownable {
         _;
     }
 
-    constructor(IFire _fire) {
+    constructor(IFire _fire, IERC20Metadata _lpToken) {
         fire = _fire;
+        lpToken = _lpToken;
     }
 
     function addVault(IVault vault) external onlyOwner {
@@ -118,6 +125,28 @@ contract Farm is IFarm, Ownable {
         emit Deposit(account, underlying, amount);
     }
 
+    function depositLpTokens(uint256 amount) public nonReentrant {
+        updatePool(lpToken);
+        Pool memory pool = pools[lpToken];
+        User storage user = users[lpToken][msg.sender];
+
+        uint256 shares = user.shares;
+        if (shares > 0) {
+            uint256 pending = ((shares * pool.accFirePerShare) / 1e12) - user.rewardDebt;
+            if (pending > 0) {
+                fire.safeTransfer(msg.sender, pending);
+            }
+        }
+
+        if (amount > 0) {
+            lpToken.safeTransferFrom(msg.sender, address(this), amount);
+            user.shares += amount;
+        }
+
+        user.rewardDebt = (user.shares * pool.accFirePerShare) / 1e12;
+        emit Deposit(msg.sender, lpToken, amount);
+    }
+
     function withdraw(address account, uint256 amount) public override onlyVaults {
         IVault vault = IVault(msg.sender);
         IERC20Metadata underlying = vault.underlying();
@@ -145,7 +174,42 @@ contract Farm is IFarm, Ownable {
         emit Withdraw(account, underlying, amount);
     }
 
-    function transfer(address sender, address recipient, uint256 amount) external override onlyVaults {
+    function withdrawLpTokens(uint256 amount) public nonReentrant {
+        updatePool(lpToken);
+        Pool memory pool = pools[lpToken];
+        User storage user = users[lpToken][msg.sender];
+
+        require(user.shares > 0, "user.shares is 0");
+        require(pool.sharesTotal > 0, "pool.sharesTotal is 0");
+
+        // Withdraw pending FIRE
+        uint256 pending = ((user.shares * pool.accFirePerShare) / 1e12) - user.rewardDebt;
+        if (pending > 0) {
+            fire.safeTransfer(msg.sender, pending);
+        }
+
+        if (amount > 0) {
+            if (amount > user.shares) {
+                user.shares = 0;
+            } else {
+                user.shares -= amount;
+            }
+            uint256 balance = lpToken.balanceOf(address(this));
+            if (balance < amount) {
+                amount = balance;
+            }
+            lpToken.safeTransfer(msg.sender, amount);
+        }
+
+        user.rewardDebt = (user.shares * pool.accFirePerShare) / 1e12;
+        emit Withdraw(msg.sender, lpToken, amount);
+    }
+
+    function transfer(
+        address sender,
+        address recipient,
+        uint256 amount
+    ) external override onlyVaults {
         withdraw(sender, amount);
         deposit(recipient, amount);
     }

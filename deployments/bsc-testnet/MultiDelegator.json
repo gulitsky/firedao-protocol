@@ -1,5 +1,5 @@
 {
-  "address": "0xa5B2E6C8eD4e407dfbd0EADF633c68E5D09d4F19",
+  "address": "0x521542F2b2FB4a80Da2e1628F5D97Fda773D70b3",
   "abi": [
     {
       "inputs": [
@@ -64,24 +64,24 @@
       "type": "function"
     }
   ],
-  "transactionHash": "0xb07c6facfa0916126a7bc2b38fbb4b15505aeebc0c9592617328e7d4a7008061",
+  "transactionHash": "0xf31cfa0d0b82e5a1af8aedb876888a092db8f6e5d53da6f603383aab9f939cab",
   "receipt": {
     "to": null,
     "from": "0xE65D91E6a3e6E4CE767a3b120bB48eaf63DB438a",
-    "contractAddress": "0xa5B2E6C8eD4e407dfbd0EADF633c68E5D09d4F19",
-    "transactionIndex": 5,
+    "contractAddress": "0x521542F2b2FB4a80Da2e1628F5D97Fda773D70b3",
+    "transactionIndex": 2,
     "gasUsed": "331820",
     "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-    "blockHash": "0xfc124ec78ce30c10155701023c74c70ba4532c0c740d244e28f96560c9fd4ab5",
-    "transactionHash": "0xb07c6facfa0916126a7bc2b38fbb4b15505aeebc0c9592617328e7d4a7008061",
+    "blockHash": "0x64e68f4565c516b065ee2c64ddccc39bca359bd34432c0ca164fce4499803279",
+    "transactionHash": "0xf31cfa0d0b82e5a1af8aedb876888a092db8f6e5d53da6f603383aab9f939cab",
     "logs": [],
-    "blockNumber": 10751458,
-    "cumulativeGasUsed": "6228751",
+    "blockNumber": 11324351,
+    "cumulativeGasUsed": "826399",
     "status": 1,
     "byzantium": true
   },
   "args": [
-    "0xEf24856F3524eAC7CC8e4A1a28A74Bd8AC5457F6"
+    "0xB11Cd085BECa70EDf5ed9c6f2414DE5D7dFeF5e2"
   ],
   "solcInputHash": "1df5ef303a97edc2a33505c590086412",
   "metadata": "{\"compiler\":{\"version\":\"0.8.4+commit.c7e474f2\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"contract FireInterface\",\"name\":\"_fire\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"delegatee\",\"type\":\"address\"},{\"internalType\":\"uint256[]\",\"name\":\"nonce\",\"type\":\"uint256[]\"},{\"internalType\":\"uint256[]\",\"name\":\"expiry\",\"type\":\"uint256[]\"},{\"internalType\":\"uint8[]\",\"name\":\"v\",\"type\":\"uint8[]\"},{\"internalType\":\"bytes32[]\",\"name\":\"r\",\"type\":\"bytes32[]\"},{\"internalType\":\"bytes32[]\",\"name\":\"s\",\"type\":\"bytes32[]\"}],\"name\":\"delegateBySig\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"fire\",\"outputs\":[{\"internalType\":\"contract FireInterface\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"contracts/governance/MultiDelegator.sol\":\"MultiDelegator\"},\"evmVersion\":\"istanbul\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\",\"useLiteralContent\":true},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[]},\"sources\":{\"contracts/governance/MultiDelegator.sol\":{\"content\":\"// SPDX-License-Identifier: AGPL-3.0\\n\\npragma solidity 0.8.4;\\n\\ninterface FireInterface {\\n    function delegateBySig(\\n        address delegatee,\\n        uint256 nonce,\\n        uint256 expiry,\\n        uint8 v,\\n        bytes32 r,\\n        bytes32 s\\n    ) external;\\n}\\n\\ncontract MultiDelegator {\\n    FireInterface public fire;\\n\\n    constructor(FireInterface _fire) {\\n        fire = _fire;\\n    }\\n\\n    function delegateBySig(\\n        address delegatee,\\n        uint256[] memory nonce,\\n        uint256[] memory expiry,\\n        uint8[] memory v,\\n        bytes32[] memory r,\\n        bytes32[] memory s\\n    ) public {\\n        for (uint256 i = 0; i < nonce.length; i++) {\\n            fire.delegateBySig(delegatee, nonce[i], expiry[i], v[i], r[i], s[i]);\\n        }\\n    }\\n}\\n\",\"keccak256\":\"0x7650282b805c0ef8e20f0fc4dbf9663e3408e426ae96d26bdee2af3695a64805\",\"license\":\"AGPL-3.0\"}},\"version\":1}",

@@ -1,5 +1,4 @@
-/* import { ethers, network } from "hardhat";
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import { ethers, network } from "hardhat";
 import {
   IERC20Metadata as ERC20,
   IERC20Metadata__factory as ERC20Factory,
@@ -15,6 +14,8 @@ import {
   Vault,
   VenusStrategy__factory as VenusStrategyFactory,
   VenusStrategy,
+  Farm__factory,
+  Farm,
 } from "./../typechain";
 import {
   WHALE_ADDRESS,
@@ -26,8 +27,10 @@ import {
   UNITROLLER_ADDRESS,
   WBNB_ADDRESS,
   impersonate,
+  FIRE_BUSD_LP_TOKEN_ADDRESS,
 } from "./helpers";
 import { BigNumber } from "@ethersproject/bignumber";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signers";
 
 const BP = ethers.BigNumber.from(10000);
 
@@ -41,6 +44,7 @@ describe("FIREDAO", () => {
   let fire: Fire;
   let pancakeRouter: PancakeRouter;
   let harvester: Harvester;
+  let farm: Farm;
   let vault: Vault;
   let strategy: VenusStrategy;
 
@@ -98,12 +102,21 @@ describe("FIREDAO", () => {
     expect(await harvester.pancakeRouter()).toBe(pancakeRouter.address);
   });
 
+  test("should deploy Farm", async () => {
+    farm = await new Farm__factory(governance).deploy(
+      fire.address,
+      FIRE_BUSD_LP_TOKEN_ADDRESS,
+    );
+    expect(await farm.fire()).toBe(fire.address);
+  });
+
   test("should deploy DAI->CAKE Vault with сorrect name, symbol, and addresses", async () => {
     vault = await new VaultFactory(governance).deploy(
       dai.address,
       cake.address,
       harvester.address,
       timelock.address,
+      farm.address,
     );
 
     const daiSymbol = await dai.symbol();
@@ -244,4 +257,3 @@ describe("FIREDAO", () => {
     );
   });
 });
- */

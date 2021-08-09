@@ -7,6 +7,8 @@ import "@typechain/hardhat";
 import "hardhat-deploy";
 import "@nomiclabs/hardhat-waffle";
 
+import "./tasks";
+
 dotenv.config();
 const {
   HARDHAT_FORK_BSC = "true",
@@ -60,7 +62,7 @@ const config: HardhatUserConfig = {
     },
     usdt: {
       default: "0x55d398326f99059fF775485246999027B3197955",
-      "bsc-testnet": "0xA11c8D9DC9b66E209Ef60F0C8D969D3CD988782c"
+      "bsc-testnet": "0xA11c8D9DC9b66E209Ef60F0C8D969D3CD988782c",
     },
     eth: {
       default: "0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
@@ -75,18 +77,18 @@ const config: HardhatUserConfig = {
     },
     vUsdt: {
       default: "0xfD5840Cd36d94D7229439859C0112a4185BC0255",
-      "bsc-testnet": "0xb7526572FFE56AB9D7489838Bf2E18e3323b441A"
+      "bsc-testnet": "0xb7526572FFE56AB9D7489838Bf2E18e3323b441A",
     },
     vDai: {
       default: "0x334b3eCB4DCa3593BCCC3c7EBD1A1C1d1780FBF1",
     },
     unitroller: {
       default: "0xfD36E2c2a6789Db23113685031d7F16329158384",
-      "bsc-testnet": "0x94d1820b2D1c7c7452A163983Dc888CEC546b77D"
+      "bsc-testnet": "0x94d1820b2D1c7c7452A163983Dc888CEC546b77D",
     },
     xvs: {
       default: "0xcF6BB5389c92Bdda8a3747Ddb454cB7a64626C63",
-      "bsc-testnet": "0xB9e0E753630434d7863528cc73CB7AC638a7c8ff"
+      "bsc-testnet": "0xB9e0E753630434d7863528cc73CB7AC638a7c8ff",
     },
     masterBelt: {
       default: "0xD4BbC80b9B102b77B21A06cb77E954049605E6c1",
@@ -99,6 +101,9 @@ const config: HardhatUserConfig = {
     },
     bUsdT: {
       default: "0x55d398326f99059fF775485246999027B3197955",
+    },
+    fireBUsdLpToken: {
+      default: "0xA39Af17CE4a8eb807E076805Da1e2B8EA7D0755b",
     },
   },
   networks: {
