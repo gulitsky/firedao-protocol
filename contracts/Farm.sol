@@ -106,7 +106,7 @@ contract Farm is IFarm, Ownable, ReentrancyGuard {
         IERC20Metadata underlying = vault.underlying();
 
         updatePool(underlying);
-        Pool memory pool = pools[underlying];
+        Pool storage pool = pools[underlying];
         User storage user = users[underlying][account];
 
         uint256 shares = user.shares;
@@ -119,6 +119,7 @@ contract Farm is IFarm, Ownable, ReentrancyGuard {
 
         if (amount > 0) {
             user.shares += amount;
+            pool.sharesTotal += amount;
         }
 
         user.rewardDebt = (user.shares * pool.accFirePerShare) / 1e12;
@@ -127,7 +128,7 @@ contract Farm is IFarm, Ownable, ReentrancyGuard {
 
     function depositLpTokens(uint256 amount) public nonReentrant {
         updatePool(lpToken);
-        Pool memory pool = pools[lpToken];
+        Pool storage pool = pools[lpToken];
         User storage user = users[lpToken][msg.sender];
 
         uint256 shares = user.shares;
@@ -141,6 +142,7 @@ contract Farm is IFarm, Ownable, ReentrancyGuard {
         if (amount > 0) {
             lpToken.safeTransferFrom(msg.sender, address(this), amount);
             user.shares += amount;
+            pool.sharesTotal += amount;
         }
 
         user.rewardDebt = (user.shares * pool.accFirePerShare) / 1e12;
@@ -152,7 +154,7 @@ contract Farm is IFarm, Ownable, ReentrancyGuard {
         IERC20Metadata underlying = vault.underlying();
 
         updatePool(underlying);
-        Pool memory pool = pools[underlying];
+        Pool storage pool = pools[underlying];
         User storage user = users[underlying][account];
 
         require(user.shares > 0, "user.shares is 0");
@@ -168,6 +170,12 @@ contract Farm is IFarm, Ownable, ReentrancyGuard {
             user.shares = 0;
         } else {
             user.shares -= amount;
+        }
+
+        if (amount > pool.sharesTotal) {
+            pool.sharesTotal = 0;
+        } else {
+            pool.sharesTotal -= amount;
         }
 
         user.rewardDebt = (user.shares * pool.accFirePerShare) / 1e12;
@@ -194,6 +202,13 @@ contract Farm is IFarm, Ownable, ReentrancyGuard {
             } else {
                 user.shares -= amount;
             }
+
+            if (amount > pool.sharesTotal) {
+                pool.sharesTotal = 0;
+            } else {
+                pool.sharesTotal -= amount;
+            }
+
             uint256 balance = lpToken.balanceOf(address(this));
             if (balance < amount) {
                 amount = balance;

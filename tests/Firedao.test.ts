@@ -1,4 +1,5 @@
 import { ethers, network } from "hardhat";
+import { expect } from "chai";
 import {
   IERC20Metadata as ERC20,
   IERC20Metadata__factory as ERC20Factory,
@@ -48,7 +49,7 @@ describe("FIREDAO", () => {
   let vault: Vault;
   let strategy: VenusStrategy;
 
-  beforeAll(async () => {
+  before(async () => {
     [governance, timelock, treasury] = await ethers.getSigners();
 
     whale = await impersonate(WHALE_ADDRESS);
@@ -69,7 +70,7 @@ describe("FIREDAO", () => {
     daiAmount = ethers.utils.parseUnits("100", await dai.decimals());
   });
 
-  test("create FIRE/CAKE pool", async () => {
+  it("create FIRE/CAKE pool", async () => {
     const fireAmount = await fire.balanceOf(whale.address);
     await fire.connect(whale).approve(pancakeRouter.address, fireAmount);
     const daiBalance = await dai.balanceOf(whale.address);
@@ -94,23 +95,24 @@ describe("FIREDAO", () => {
       );
   });
 
-  test("should deploy Harvester", async () => {
+  it("should deploy Harvester", async () => {
     harvester = await new HarversterFactory(governance).deploy(
       pancakeRouter.address,
       treasury.address,
     );
-    expect(await harvester.pancakeRouter()).toBe(pancakeRouter.address);
+    expect(await harvester.pancakeRouter()).to.be.equal(pancakeRouter.address);
   });
 
-  test("should deploy Farm", async () => {
+  it("should deploy Farm", async () => {
     farm = await new Farm__factory(governance).deploy(
       fire.address,
       FIRE_BUSD_LP_TOKEN_ADDRESS,
     );
-    expect(await farm.fire()).toBe(fire.address);
+    await fire.setOwner(farm.address);
+    expect(await farm.fire()).to.be.equal(fire.address);
   });
 
-  test("should deploy DAI->CAKE Vault with сorrect name, symbol, and addresses", async () => {
+  it("should deploy DAI->CAKE Vault with сorrect name, symbol, and addresses", async () => {
     vault = await new VaultFactory(governance).deploy(
       dai.address,
       cake.address,
@@ -119,21 +121,24 @@ describe("FIREDAO", () => {
       farm.address,
     );
 
+    await farm.addPool(dai.address, 25);
+    await farm.addVault(vault.address);
+
     const daiSymbol = await dai.symbol();
     const cakeSymbol = await cake.symbol();
-    expect(await vault.name()).toBe(
+    expect(await vault.name()).to.be.equal(
       `FIREDAO ${daiSymbol} to ${cakeSymbol} Yield Token`,
     );
-    expect(await vault.symbol()).toBe(`fi${daiSymbol}->${cakeSymbol}`);
+    expect(await vault.symbol()).to.be.equal(`fi${daiSymbol}->${cakeSymbol}`);
 
-    expect(await vault.harvester()).toBe(harvester.address);
-    expect(await vault.underlying()).toBe(dai.address);
-    expect(await vault.target()).toBe(cake.address);
-    expect(await vault.timelock()).toBe(timelock.address);
-    expect(await vault.paused()).toBe(true);
+    expect(await vault.harvester()).to.be.equal(harvester.address);
+    expect(await vault.underlying()).to.be.equal(dai.address);
+    expect(await vault.target()).to.be.equal(cake.address);
+    expect(await vault.timelock()).to.be.equal(timelock.address);
+    expect(await vault.paused()).to.be.true;
   });
 
-  test("should deploy Venus Strategy", async () => {
+  it("should deploy Venus Strategy", async () => {
     strategy = await new VenusStrategyFactory(governance).deploy(
       vault.address,
       vDai.address,
@@ -144,39 +149,44 @@ describe("FIREDAO", () => {
       [xvs.address, WBNB_ADDRESS, dai.address],
       true,
     );
-    expect(await strategy.strategist()).toBe(governance.address);
-    expect(await strategy.vault()).toBe(vault.address);
-    expect(await strategy.vToken()).toBe(vDai.address);
-    expect(await strategy.underlying()).toBe(dai.address);
-    expect(await strategy.unitroller()).toBe(UNITROLLER_ADDRESS);
-    expect(await strategy.xvs()).toBe(xvs.address);
-    expect(await strategy.pancakeRouter()).toBe(pancakeRouter.address);
-    expect(await strategy.owner()).toBe(timelock.address);
-    expect(await strategy.reinvestXvs()).toBe(true);
+    expect(await strategy.strategist()).to.be.equal(governance.address);
+    expect(await strategy.vault()).to.be.equal(vault.address);
+    expect(await strategy.vToken()).to.be.equal(vDai.address);
+    expect(await strategy.underlying()).to.be.equal(dai.address);
+    expect(await strategy.unitroller()).to.be.equal(UNITROLLER_ADDRESS);
+    expect(await strategy.xvs()).to.be.equal(xvs.address);
+    expect(await strategy.pancakeRouter()).to.be.equal(pancakeRouter.address);
+    expect(await strategy.owner()).to.be.equal(timelock.address);
+    expect(await strategy.reinvestXvs()).to.be.true;
   });
 
-  test("should connect Venus Strategy to Vault", async () => {
+  it("should connect Venus Strategy to Vault", async () => {
     await vault.setStrategy(strategy.address, false);
-    expect(await vault.strategy()).toBe(strategy.address);
-    expect(await vault.paused()).toBe(false);
+    expect(await vault.strategy()).to.be.equal(strategy.address);
+    expect(await vault.paused()).to.be.false;
   });
 
-  test("should deposit DAI", async () => {
+  it("should deposit DAI", async () => {
     await dai.approve(vault.address, daiAmount);
     await vault.connect(whale).deposit(daiAmount);
-    expect(await dai.balanceOf(vault.address)).toStrictEqual(daiAmount);
-    expect(await vault.balanceOf(whale.address)).toStrictEqual(daiAmount);
+    expect(await dai.balanceOf(vault.address)).to.deep.equal(daiAmount);
+    expect(await vault.balanceOf(whale.address)).to.deep.equal(daiAmount);
+
+    const { sharesTotal } = await farm.pools(dai.address);
+    const { shares } = await farm.users(dai.address, whale.address);
+    expect(sharesTotal).to.deep.equal(daiAmount);
+    expect(shares).to.deep.equal(daiAmount);
   });
 
-  test("should earn", async () => {
+  it("should earn", async () => {
     await vault.earn();
 
     let balance = await dai.balanceOf(vault.address);
     const barrier = await vault.barrier();
-    expect(balance).toStrictEqual(daiAmount.mul(barrier).div(BP));
+    expect(balance).to.deep.equal(daiAmount.mul(barrier).div(BP));
   });
 
-  test("should harvest", async () => {
+  it("should harvest", async () => {
     const currentBlock = await ethers.provider.getBlockNumber();
     const block = await ethers.provider.getBlock(currentBlock);
     const future = block.timestamp + 178800;
@@ -192,7 +202,7 @@ describe("FIREDAO", () => {
       strategy.address,
     );
     const totalSupply = await vault.totalSupply();
-    expect(y).toStrictEqual(
+    expect(y).to.deep.equal(
       venusUnderlyingBalance.add(underlyingBalance).sub(totalSupply),
     );
 
@@ -227,33 +237,38 @@ describe("FIREDAO", () => {
 
     let balance = await cake.balanceOf(treasury.address);
     const performanceFee = await harvester.performanceFee();
-    expect(balance).toStrictEqual(cakeAmount.mul(performanceFee).div(BP));
+    expect(balance).to.deep.equal(cakeAmount.mul(performanceFee).div(BP));
 
     balance = await fire.balanceOf(harvester.address);
-    expect(balance).toStrictEqual(fireAmount);
+    expect(balance).to.deep.equal(fireAmount);
   });
 
-  test("should claim CAKE", async () => {
+  it("should claim CAKE", async () => {
     const balance = await cake.balanceOf(vault.address);
     const balanceBefore = await cake.balanceOf(whale.address);
 
     const unclaimedProfit = await vault.unclaimedProfit(whale.address);
-    expect(unclaimedProfit).toStrictEqual(balance.sub(1));
+    expect(unclaimedProfit).to.deep.equal(balance.sub(1));
     await vault.connect(whale).claim();
 
     const balanceAfter = await cake.balanceOf(whale.address);
-    expect(balanceAfter.sub(balanceBefore)).toStrictEqual(unclaimedProfit);
+    expect(balanceAfter.sub(balanceBefore)).to.deep.equal(unclaimedProfit);
   });
 
-  test("should withdraw DAI", async () => {
+  it("should withdraw DAI", async () => {
     const balanceBefore = await dai.balanceOf(whale.address);
 
     await vault.connect(whale).withdraw(daiAmount);
 
     const balanceAfter = await dai.balanceOf(whale.address);
     const withdrawalFee = await vault.withdrawalFee();
-    expect(balanceAfter.sub(balanceBefore)).toStrictEqual(
+    expect(balanceAfter.sub(balanceBefore)).to.deep.equal(
       daiAmount.sub(daiAmount.mul(withdrawalFee).div(BP)),
     );
+
+    const { sharesTotal } = await farm.pools(dai.address);
+    const { shares } = await farm.users(dai.address, whale.address);
+    expect(sharesTotal).to.deep.equal(ethers.constants.Zero);
+    expect(shares).to.deep.equal(ethers.constants.Zero);
   });
 });

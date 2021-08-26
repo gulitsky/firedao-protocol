@@ -6,11 +6,13 @@ import "@nomiclabs/hardhat-ethers";
 import "@typechain/hardhat";
 import "hardhat-deploy";
 import "@nomiclabs/hardhat-waffle";
+import "solidity-coverage";
 
 import "./tasks";
 
 dotenv.config();
 const {
+  BSC_FORKING_URL,
   HARDHAT_FORK_BSC = "true",
   MNEMONIC,
   OPTIMIZE = "true",
@@ -111,7 +113,7 @@ const config: HardhatUserConfig = {
       accounts,
       forking: {
         enabled: HARDHAT_FORK_BSC && HARDHAT_FORK_BSC === "true" ? true : false,
-        url: "https://bsc-dataseed1.binance.org",
+        url: BSC_FORKING_URL || "https://bsc-dataseed.binance.org",
       },
       tags: ["local", "test"],
     },
@@ -123,7 +125,7 @@ const config: HardhatUserConfig = {
     },
     "bsc-testnet": {
       accounts,
-      url: "https://data-seed-prebsc-1-s1.binance.org:8545",
+      url: "https://data-seed-prebsc-2-s2.binance.org:8545",
       chainId: 97,
       tags: ["staging"],
     },
@@ -137,6 +139,9 @@ const config: HardhatUserConfig = {
   spdxLicenseIdentifier: {
     runOnCompile: true,
     overwrite: true,
+  },
+  mocha: {
+    timeout: 50000,
   },
 };
 export default config;

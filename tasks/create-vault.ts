@@ -59,7 +59,7 @@ task("create-vault", "Creates the vault")
           farm.address,
         );
       }
-      console.info(`Compound Vault: ${vault.address}`);
+      console.info(`Vault: ${vault.address}`);
       const venusStrategyFactory = await hre.ethers.getContractFactory(
         "VenusStrategy",
       );
